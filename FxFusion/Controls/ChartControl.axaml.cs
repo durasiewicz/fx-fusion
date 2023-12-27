@@ -6,6 +6,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
@@ -84,8 +85,15 @@ public partial class ChartControl : UserControl
             Style = SKPaintStyle.Stroke
         };
 
-        private readonly int _segmentWidth = 50;
-        private readonly int _segmentMargin = 1;
+        private int _segmentWidth = 50;
+        private readonly int _zoomStep = 2;
+
+        public void ZoomIn() => _segmentWidth = Math.Min(50, _segmentWidth + _zoomStep);
+        public void ZoomOut() => _segmentWidth = Math.Max(10, _segmentWidth - _zoomStep);
+        
+        private int SegmentMargin => (int)(_segmentWidth * 0.1);
+        private readonly int _marginTop = 50;
+        private readonly int _marginBottom = 50;
         
         public void Render(ImmediateDrawingContext context)
         {
@@ -100,7 +108,7 @@ public partial class ChartControl : UserControl
             var visibleDataSpan = data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, data.Length)];
             var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
             var priceRange = maxPrice - minPrice;
-            var pixelPerPriceUnit = Bounds.Height / (double)priceRange;
+            var pixelPerPriceUnit = (Bounds.Height - _marginTop - _marginBottom) / (double)priceRange;
             
             using var lease = leaseFeature.Lease();
             var canvas = lease.SkCanvas;
@@ -127,18 +135,18 @@ public partial class ChartControl : UserControl
                     new SKPoint(segmentMiddle, barLowY),
                     _barPaint);
 
-                var bodyRect = new SKRect(currentSegmentPosX - _segmentWidth + _segmentMargin,
+                var bodyRect = new SKRect(currentSegmentPosX - _segmentWidth + SegmentMargin,
                     CalculateY(Math.Max(barData.Open, barData.Close)),
-                    currentSegmentPosX - _segmentMargin,
+                    currentSegmentPosX - SegmentMargin,
                     CalculateY(Math.Min(barData.Open, barData.Close)));
                 
-                canvas.DrawRect(bodyRect, barData.Open > barData.Close ? _bullCandlePaint : _bearCandlePaint);
+                canvas.DrawRect(bodyRect, barData.Open > barData.Close ? _bearCandlePaint : _bullCandlePaint);
                 canvas.DrawRect(bodyRect, _candleBodyBorder);
                 
-                canvas.DrawText(barData.Time.ToString("dd-MM"),
-                    segmentMiddle,
-                    CalculateY(barData.High),
-                    _barPaint);
+                // canvas.DrawText(barData.Time.ToString("dd-MM"),
+                //     segmentMiddle,
+                //     CalculateY(barData.High),
+                //     _barPaint);
                 
                 currentSegmentPosX -= _segmentWidth;
             }
@@ -150,7 +158,7 @@ public partial class ChartControl : UserControl
             float CalculateY(decimal price)
             {
                 var priceDataMinDiff = price - minPrice;
-                return (float)(Bounds.Height - (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit));
+                return (float)(Bounds.Height - _marginTop - (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit));
             }
 
             (decimal min, decimal max) CalculateMinMaxPrice(ReadOnlySpan<Bar> dataSlice)
@@ -185,4 +193,7 @@ public partial class ChartControl : UserControl
         context.Custom(_chartDrawOperation);
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }
+
+    private void ZoomIn(object? sender, RoutedEventArgs e) => _chartDrawOperation.ZoomIn();
+    private void ZoomOut(object? sender, RoutedEventArgs e) => _chartDrawOperation.ZoomOut();
 }
