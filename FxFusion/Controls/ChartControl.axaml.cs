@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
@@ -18,12 +19,16 @@ namespace FxFusion.Controls;
 public partial class ChartControl : UserControl
 {
     private readonly ChartDrawOperation _chartDrawOperation;
+    private readonly Bar[] _testData;
 
     public ChartControl()
     {
         InitializeComponent();
         ClipToBounds = true;
-        _chartDrawOperation = new ChartDrawOperation(GetTestData().Reverse().ToArray());
+        _testData = GetTestData().Reverse().ToArray();
+        ChartScrollBar.Maximum = _testData.Length;
+        ChartScrollBar.Value = ChartScrollBar.Maximum;
+        _chartDrawOperation = new ChartDrawOperation(ChartScrollBar, _testData);
     }
 
     private IEnumerable<Bar> GetTestData() =>
@@ -35,10 +40,18 @@ public partial class ChartControl : UserControl
             decimal.Parse(cells[4], decimalCulture),
             DateTime.Parse(cells[0]));
     
-    private class ChartDrawOperation(Bar[] data) : ICustomDrawOperation
+    private class ChartDrawOperation(ScrollBar chartScrollBar, Bar[] data) : ICustomDrawOperation
     {
         public void Dispose() { }
-        public void BeginRender(Rect bounds) => Bounds = bounds;
+
+        public void BeginRender(int dataShift, Rect bounds)
+        {
+            Bounds = bounds;
+            DataShift = dataShift;
+        }
+
+        private int DataShift { get; set; }
+
         public Rect Bounds { get; private set; }
         public bool HitTest(Point p) => false;
         public bool Equals(ICustomDrawOperation? other) => false;
@@ -84,7 +97,7 @@ public partial class ChartControl : UserControl
             }
 
             var visibleSegmentsCount = (int)(Bounds.Width / _segmentWidth);
-            var visibleDataSpan = data.AsSpan()[..visibleSegmentsCount];
+            var visibleDataSpan = data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, data.Length)];
             var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
             var priceRange = maxPrice - minPrice;
             var pixelPerPriceUnit = Bounds.Height / (double)priceRange;
@@ -99,6 +112,11 @@ public partial class ChartControl : UserControl
 
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
+                if (segmentIndex >= visibleDataSpan.Length)
+                {
+                    continue;
+                }
+                
                 var barData = visibleDataSpan[segmentIndex];
                 var segmentMiddle = currentSegmentPosX - (_segmentWidth / 2);
 
@@ -146,6 +164,16 @@ public partial class ChartControl : UserControl
                     currentMax = Math.Max(currentMax, bar.High);
                 }
 
+                if (currentMin is decimal.MaxValue)
+                {
+                    currentMin = 0;
+                }
+
+                if (currentMax is decimal.MinValue)
+                {
+                    currentMax = 0;
+                }
+                
                 return (currentMin, currentMax);
             }
         }
@@ -153,7 +181,7 @@ public partial class ChartControl : UserControl
     
     public override void Render(DrawingContext context)
     {
-        _chartDrawOperation.BeginRender(new Rect(0, 0, Bounds.Width, Bounds.Height));
+        _chartDrawOperation.BeginRender(_testData.Length - (int)ChartScrollBar.Value, new Rect(0, 0, Bounds.Width, Bounds.Height));
         context.Custom(_chartDrawOperation);
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }
