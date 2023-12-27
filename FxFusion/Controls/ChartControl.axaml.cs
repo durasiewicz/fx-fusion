@@ -63,6 +63,13 @@ public partial class ChartControl : UserControl
             Color = SKColors.Crimson,
             Style = SKPaintStyle.Fill
         };
+        
+        private readonly SKPaint _candleBodyBorder = new()
+        {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke
+        };
 
         private readonly int _segmentWidth = 50;
         private readonly int _segmentMargin = 1;
@@ -102,11 +109,13 @@ public partial class ChartControl : UserControl
                     new SKPoint(segmentMiddle, barLowY),
                     _barPaint);
 
-                canvas.DrawRect(new SKRect(currentSegmentPosX - _segmentWidth + _segmentMargin,
+                var bodyRect = new SKRect(currentSegmentPosX - _segmentWidth + _segmentMargin,
                     CalculateY(Math.Max(barData.Open, barData.Close)),
                     currentSegmentPosX - _segmentMargin,
-                    CalculateY(Math.Min(barData.Open, barData.Close))),
-                    barData.Open > barData.Close ? _bullCandlePaint : _bearCandlePaint);
+                    CalculateY(Math.Min(barData.Open, barData.Close)));
+                
+                canvas.DrawRect(bodyRect, barData.Open > barData.Close ? _bullCandlePaint : _bearCandlePaint);
+                canvas.DrawRect(bodyRect, _candleBodyBorder);
                 
                 canvas.DrawText(barData.Time.ToString("dd-MM"),
                     segmentMiddle,
