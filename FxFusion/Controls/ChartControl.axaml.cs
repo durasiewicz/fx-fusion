@@ -77,7 +77,7 @@ public partial class ChartControl : UserControl
             }
 
             var visibleSegmentsCount = (int)(Bounds.Width / _segmentWidth);
-            var visibleDataSpan = data.AsSpan()[..(visibleSegmentsCount + 1)];
+            var visibleDataSpan = data.AsSpan()[..visibleSegmentsCount];
             var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
             var priceRange = maxPrice - minPrice;
             var pixelPerPriceUnit = Bounds.Height / (double)priceRange;
@@ -88,24 +88,32 @@ public partial class ChartControl : UserControl
             canvas.Clear(SKColors.Moccasin);
 
             // 0.5f is initial value for pixel perfect drawing
-            var currentSegmentPosX = 0.5f;
+            var currentSegmentPosX = _segmentWidth * visibleSegmentsCount -  0.5f;
 
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
-                var barData = visibleDataSpan[visibleSegmentsCount - segmentIndex];
+                var barData = visibleDataSpan[segmentIndex];
                 var segmentMiddle = currentSegmentPosX - (_segmentWidth / 2);
+
+                var barHighY = CalculateY(barData.High);
+                var barLowY = CalculateY(barData.Low);
                 
-                canvas.DrawLine(new SKPoint(segmentMiddle, CalculateY(barData.High)),
-                    new SKPoint(segmentMiddle, CalculateY(barData.Low)),
+                canvas.DrawLine(new SKPoint(segmentMiddle, barHighY),
+                    new SKPoint(segmentMiddle, barLowY),
                     _barPaint);
 
-                canvas.DrawRect(new SKRect(currentSegmentPosX + _segmentMargin,
+                canvas.DrawRect(new SKRect(currentSegmentPosX - _segmentWidth + _segmentMargin,
                     CalculateY(Math.Max(barData.Open, barData.Close)),
-                    currentSegmentPosX + _segmentWidth - _segmentMargin,
+                    currentSegmentPosX - _segmentMargin,
                     CalculateY(Math.Min(barData.Open, barData.Close))),
                     barData.Open > barData.Close ? _bullCandlePaint : _bearCandlePaint);
                 
-                currentSegmentPosX += _segmentWidth;
+                canvas.DrawText(barData.Time.ToString("dd-MM"),
+                    segmentMiddle,
+                    CalculateY(barData.High),
+                    _barPaint);
+                
+                currentSegmentPosX -= _segmentWidth;
             }
             
             canvas.Restore();
@@ -114,8 +122,8 @@ public partial class ChartControl : UserControl
 
             float CalculateY(decimal price)
             {
-                var priceDataMinDiff = (int)(price - minPrice);
-                return (float)(Bounds.Height - priceDataMinDiff * pixelPerPriceUnit);
+                var priceDataMinDiff = price - minPrice;
+                return (float)(Bounds.Height - (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit));
             }
 
             (decimal min, decimal max) CalculateMinMaxPrice(ReadOnlySpan<Bar> dataSlice)
