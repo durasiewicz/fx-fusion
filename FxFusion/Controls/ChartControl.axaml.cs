@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -21,20 +20,24 @@ public partial class ChartControl : UserControl
     private readonly ChartDrawOperation _chartDrawOperation;
     private Bar[]? _data;
     private IMarketDataSource? _marketMarketDataSource;
+    private int _availableBarsCount;
+    private int _barsShift;
+    private string? _timeFrame;
+    private string? _symbol;
 
     public ChartControl()
     {
         InitializeComponent();
         ClipToBounds = true;
         _chartDrawOperation = new ChartDrawOperation();
-        SelectedSymbolComboBox.SelectionChanged += OnSymbolOrTimeFrameChanged;
-        SelectedTimeFrameComboBox.SelectionChanged += OnSymbolOrTimeFrameChanged;
-    }
 
-    private async void OnSymbolOrTimeFrameChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        _data = null;
-        await LoadData();
+        PropertyChanged += async (sender, args) =>
+        {
+            if (args.Property.Name is nameof(Symbol) or nameof(TimeFrame))
+            {
+                await LoadData();
+            } 
+        };
     }
 
     private async Task LoadData()
@@ -44,29 +47,16 @@ public partial class ChartControl : UserControl
             return;
         }
         
-        _data = await _marketMarketDataSource.GetData(SelectedSymbolComboBox.SelectedValue as string,
-            SelectedTimeFrameComboBox.SelectedValue as string);
-        ChartScrollBar.Maximum = _data.Length;
-        ChartScrollBar.Value = ChartScrollBar.Maximum;
+        _data = await _marketMarketDataSource.GetData(Symbol, TimeFrame);
+        
+        AvailableBarsCount = _data.Length;
+        BarsShift = _data.Length;
     }
 
     public IMarketDataSource? MarketDataSource
     {
         get => _marketMarketDataSource;
-        set
-        {
-            SetAndRaise(MarketDataSourceProperty, ref _marketMarketDataSource, value);
-
-            if (_marketMarketDataSource is null)
-            {
-                return;
-            }
-
-            SelectedSymbolComboBox.ItemsSource = _marketMarketDataSource.AvailableSymbols.ToArray();
-            SelectedSymbolComboBox.SelectedIndex = 0;
-            SelectedTimeFrameComboBox.ItemsSource = _marketMarketDataSource.AvailableTimeFrames.ToArray();
-            SelectedTimeFrameComboBox.SelectedIndex = 0;
-        }
+        set => SetAndRaise(MarketDataSourceProperty, ref _marketMarketDataSource, value);
     }
 
     public static readonly DirectProperty<ChartControl, IMarketDataSource?> MarketDataSourceProperty =
@@ -74,6 +64,62 @@ public partial class ChartControl : UserControl
             nameof(MarketDataSource),
             o => o.MarketDataSource,
             (o, v) => o.MarketDataSource = v,
+            defaultBindingMode: BindingMode.TwoWay,
+            enableDataValidation: true);
+
+    public string? Symbol
+    {
+        get => _symbol;
+        set => SetAndRaise(SymbolProperty, ref _symbol, value);
+    }
+
+    public static readonly DirectProperty<ChartControl, string?> SymbolProperty =
+        AvaloniaProperty.RegisterDirect<ChartControl, string?>(
+            nameof(Symbol),
+            o => o.Symbol,
+            (o, v) => o.Symbol = v,
+            defaultBindingMode: BindingMode.TwoWay,
+            enableDataValidation: true);
+
+    public string? TimeFrame
+    {
+        get => _timeFrame;
+        set => SetAndRaise(TimeFrameProperty, ref _timeFrame, value);
+    }
+
+    public static readonly DirectProperty<ChartControl, string?> TimeFrameProperty =
+        AvaloniaProperty.RegisterDirect<ChartControl, string?>(
+            nameof(TimeFrame),
+            o => o.TimeFrame,
+            (o, v) => o.TimeFrame = v,
+            defaultBindingMode: BindingMode.TwoWay,
+            enableDataValidation: true);
+
+    public int BarsShift
+    {
+        get => _barsShift;
+        set => SetAndRaise(BarsShiftProperty, ref _barsShift, value);
+    }
+
+    public static readonly DirectProperty<ChartControl, int> BarsShiftProperty =
+        AvaloniaProperty.RegisterDirect<ChartControl, int>(
+            nameof(BarsShift),
+            o => o._barsShift,
+            (o, v) => o._barsShift = v,
+            defaultBindingMode: BindingMode.TwoWay,
+            enableDataValidation: true);
+
+    public int AvailableBarsCount
+    {
+        get => _availableBarsCount;
+        set => SetAndRaise(AvailableBarsCountProperty, ref _availableBarsCount, value);
+    }
+
+    public static readonly DirectProperty<ChartControl, int> AvailableBarsCountProperty =
+        AvaloniaProperty.RegisterDirect<ChartControl, int>(
+            nameof(AvailableBarsCount),
+            o => o.AvailableBarsCount,
+            (o, v) => o.AvailableBarsCount = v,
             defaultBindingMode: BindingMode.TwoWay,
             enableDataValidation: true);
 
@@ -236,10 +282,10 @@ public partial class ChartControl : UserControl
             }
         }
     }
-
+    
     public override void Render(DrawingContext context)
     {
-        var dataShift = _data?.Length - (int)ChartScrollBar.Value ?? 0;
+        var dataShift = _data?.Length - BarsShift ?? 0;
         _chartDrawOperation.BeginRender(_data, dataShift, new Rect(0, 0, Bounds.Width, Bounds.Height));
         context.Custom(_chartDrawOperation);
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);

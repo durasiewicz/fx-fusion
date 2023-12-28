@@ -16,6 +16,32 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-   <controls:ChartControl MarketDataSource="{Binding MarketDataSource}"/>
+    <Grid RowDefinitions="33,*,Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto" RowDefinitions="Auto">
+            <!-- <Button Grid.Column="0" Click="ZoomIn">Zoom in</Button> -->
+            <!-- <Button Grid.Column="1" Click="ZoomOut">Zoom out</Button> -->
+            <!-- <Button Grid.Column="1" Click="ZoomOut">Zoom out</Button> -->
+            <ComboBox Grid.Column="2" 
+                      ItemsSource="{Binding MarketDataSource.AvailableSymbols}"
+                      SelectedItem="{Binding SelectedSymbol}"/>
+            <ComboBox Grid.Column="3" 
+                      ItemsSource="{Binding MarketDataSource.AvailableTimeFrames}"
+                      SelectedItem="{Binding SelectedTimeFrame}"/>
+        </Grid>
+        <controls:ChartControl 
+            Grid.Row="1"
+            BarsShift="{Binding BarShift}"
+            AvailableBarsCount="{Binding AvailableBarsCount}"
+            Symbol="{Binding SelectedSymbol}"
+            TimeFrame="{Binding SelectedTimeFrame}"
+            MarketDataSource="{Binding MarketDataSource}"/>
+        <ScrollBar
+            Grid.Row="2"
+            Visibility="Visible" 
+            Maximum="{Binding AvailableBarsCount}"
+            Value="{Binding BarShift}"
+            VerticalAlignment="Bottom" 
+            Orientation="Horizontal"></ScrollBar>
+    </Grid>
 
 </Window>

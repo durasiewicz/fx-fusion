@@ -4,18 +4,4 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="FxFusion.Controls.ChartControl">
-    <Grid RowDefinitions="10,*,Auto">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto" RowDefinitions="Auto">
-            <Button Grid.Column="0" Click="ZoomIn">Zoom in</Button>
-            <Button Grid.Column="1" Click="ZoomOut">Zoom out</Button>
-            <ComboBox Grid.Column="2" Name="SelectedSymbolComboBox" />
-            <ComboBox Grid.Column="3" Name="SelectedTimeFrameComboBox" />
-        </Grid>
-        <ScrollBar
-            Grid.Row="2"
-            Visibility="Visible" 
-            Name="ChartScrollBar" 
-            VerticalAlignment="Bottom" 
-            Orientation="Horizontal"></ScrollBar>
-    </Grid>
 </UserControl>
