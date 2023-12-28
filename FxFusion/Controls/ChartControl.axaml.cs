@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
@@ -21,20 +19,14 @@ namespace FxFusion.Controls;
 public partial class ChartControl : UserControl
 {
     private readonly ChartDrawOperation _chartDrawOperation;
-    private readonly IMarketDataSource<string, string> _dataSource;
     private Bar[]? _data;
+    private IMarketDataSource? _marketMarketDataSource;
 
     public ChartControl()
     {
         InitializeComponent();
         ClipToBounds = true;
         _chartDrawOperation = new ChartDrawOperation();
-        _dataSource = new StooqMarketDataSource();
-        SelectedSymbolComboBox.ItemsSource = _dataSource.AvailableSymbols.ToArray();
-        SelectedSymbolComboBox.SelectedIndex = 0;
-        SelectedTimeFrameComboBox.ItemsSource = _dataSource.AvailableTimeFrames.ToArray();
-        SelectedTimeFrameComboBox.SelectedIndex = 0;
-        
         SelectedSymbolComboBox.SelectionChanged += OnSymbolOrTimeFrameChanged;
         SelectedTimeFrameComboBox.SelectionChanged += OnSymbolOrTimeFrameChanged;
     }
@@ -47,20 +39,43 @@ public partial class ChartControl : UserControl
 
     private async Task LoadData()
     {
-        _data = await _dataSource.GetData(SelectedSymbolComboBox.SelectedValue as string,
+        if (_marketMarketDataSource is null)
+        {
+            return;
+        }
+        
+        _data = await _marketMarketDataSource.GetData(SelectedSymbolComboBox.SelectedValue as string,
             SelectedTimeFrameComboBox.SelectedValue as string);
         ChartScrollBar.Maximum = _data.Length;
         ChartScrollBar.Value = ChartScrollBar.Maximum;
     }
 
-    private IEnumerable<Bar> GetTestData() =>
-        from cells in (from line in File.ReadAllLines("usdjpy_d.csv").Skip(1) select line.Split(','))
-        let decimalCulture = new CultureInfo("en-US")
-        select new Bar(decimal.Parse(cells[1], decimalCulture),
-            decimal.Parse(cells[2], decimalCulture),
-            decimal.Parse(cells[3], decimalCulture),
-            decimal.Parse(cells[4], decimalCulture),
-            DateTime.Parse(cells[0]));
+    public IMarketDataSource? MarketDataSource
+    {
+        get => _marketMarketDataSource;
+        set
+        {
+            SetAndRaise(MarketDataSourceProperty, ref _marketMarketDataSource, value);
+
+            if (_marketMarketDataSource is null)
+            {
+                return;
+            }
+
+            SelectedSymbolComboBox.ItemsSource = _marketMarketDataSource.AvailableSymbols.ToArray();
+            SelectedSymbolComboBox.SelectedIndex = 0;
+            SelectedTimeFrameComboBox.ItemsSource = _marketMarketDataSource.AvailableTimeFrames.ToArray();
+            SelectedTimeFrameComboBox.SelectedIndex = 0;
+        }
+    }
+
+    public static readonly DirectProperty<ChartControl, IMarketDataSource?> MarketDataSourceProperty =
+        AvaloniaProperty.RegisterDirect<ChartControl, IMarketDataSource?>(
+            nameof(MarketDataSource),
+            o => o.MarketDataSource,
+            (o, v) => o.MarketDataSource = v,
+            defaultBindingMode: BindingMode.TwoWay,
+            enableDataValidation: true);
 
     private class ChartDrawOperation : ICustomDrawOperation
     {

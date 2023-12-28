@@ -16,6 +16,6 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-   <controls:ChartControl />
+   <controls:ChartControl MarketDataSource="{Binding MarketDataSource}"/>
 
 </Window>

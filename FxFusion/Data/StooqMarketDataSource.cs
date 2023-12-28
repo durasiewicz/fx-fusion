@@ -9,7 +9,7 @@ using FxFusion.Models;
 
 namespace FxFusion.Data;
 
-public class StooqMarketDataSource : IMarketDataSource<string, string>
+public class StooqMarketDataSource : IMarketDataSource
 {
     public IEnumerable<string> AvailableSymbols => new[]
     {
@@ -36,16 +36,10 @@ public class StooqMarketDataSource : IMarketDataSource<string, string>
 
     public async Task<Bar[]> GetData(string? symbol, string? timeFrame)
     {
-        if (string.IsNullOrEmpty(symbol))
+        if (string.IsNullOrEmpty(symbol) || string.IsNullOrEmpty(timeFrame))
         {
-            throw new ArgumentNullException(nameof(symbol));
+            return Array.Empty<Bar>();
         }
-
-        if (string.IsNullOrEmpty(timeFrame))
-        {
-            throw new ArgumentNullException(nameof(timeFrame));
-        }
-
         
         if (!Directory.Exists("data"))
         {

@@ -4,9 +4,9 @@ using FxFusion.Models;
 
 namespace FxFusion.Data;
 
-public interface IMarketDataSource<TSymbol, TTimeFrame>
+public interface IMarketDataSource
 {
-    IEnumerable<TSymbol> AvailableSymbols { get; }
-    IEnumerable<TTimeFrame> AvailableTimeFrames { get; }
-    Task<Bar[]> GetData(TSymbol? symbol, TTimeFrame? timeFrame);
+    IEnumerable<string> AvailableSymbols { get; }
+    IEnumerable<string> AvailableTimeFrames { get; }
+    Task<Bar[]> GetData(string? symbol, string? timeFrame);
 }
