@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
+using FxFusion.Data;
 using FxFusion.Models;
 using SkiaSharp;
 
@@ -20,16 +21,29 @@ namespace FxFusion.Controls;
 public partial class ChartControl : UserControl
 {
     private readonly ChartDrawOperation _chartDrawOperation;
-    private readonly Bar[] _testData;
+    private readonly IMarketDataSource<string, string> _dataSource;
+    private Bar[]? _data;
 
     public ChartControl()
     {
         InitializeComponent();
         ClipToBounds = true;
-        _testData = GetTestData().Reverse().ToArray();
-        ChartScrollBar.Maximum = _testData.Length;
+        _chartDrawOperation = new ChartDrawOperation();
+        _dataSource = new StooqMarketDataSource();
+        SelectedSymbolComboBox.SelectionChanged += async (sender, args) =>
+        {
+            _data = null;
+            await LoadData();
+        };
+        SelectedSymbolComboBox.ItemsSource = _dataSource.AvailableSymbols.OrderBy(q => q).ToArray();
+        SelectedSymbolComboBox.SelectedIndex = 0;
+    }
+
+    private async Task LoadData()
+    {
+        _data = await _dataSource.GetData(SelectedSymbolComboBox.SelectedValue as string, "D");
+        ChartScrollBar.Maximum = _data.Length;
         ChartScrollBar.Value = ChartScrollBar.Maximum;
-        _chartDrawOperation = new ChartDrawOperation(ChartScrollBar, _testData);
     }
 
     private IEnumerable<Bar> GetTestData() =>
@@ -40,17 +54,21 @@ public partial class ChartControl : UserControl
             decimal.Parse(cells[3], decimalCulture),
             decimal.Parse(cells[4], decimalCulture),
             DateTime.Parse(cells[0]));
-    
-    private class ChartDrawOperation(ScrollBar chartScrollBar, Bar[] data) : ICustomDrawOperation
-    {
-        public void Dispose() { }
 
-        public void BeginRender(int dataShift, Rect bounds)
+    private class ChartDrawOperation : ICustomDrawOperation
+    {
+        public void Dispose()
         {
+        }
+
+        public void BeginRender(Bar[]? data, int dataShift, Rect bounds)
+        {
+            Data = data;
             Bounds = bounds;
             DataShift = dataShift;
         }
 
+        private Bar[]? Data { get; set; }
         private int DataShift { get; set; }
 
         public Rect Bounds { get; private set; }
@@ -63,21 +81,21 @@ public partial class ChartControl : UserControl
             Color = SKColors.Black,
             Style = SKPaintStyle.Stroke
         };
-        
+
         private readonly SKPaint _bullCandlePaint = new()
         {
             IsAntialias = true,
             Color = SKColors.Green,
             Style = SKPaintStyle.Fill
         };
-        
+
         private readonly SKPaint _bearCandlePaint = new()
         {
             IsAntialias = true,
             Color = SKColors.Crimson,
             Style = SKPaintStyle.Fill
         };
-        
+
         private readonly SKPaint _candleBodyBorder = new()
         {
             IsAntialias = true,
@@ -90,33 +108,43 @@ public partial class ChartControl : UserControl
 
         public void ZoomIn() => _segmentWidth = Math.Min(50, _segmentWidth + _zoomStep);
         public void ZoomOut() => _segmentWidth = Math.Max(10, _segmentWidth - _zoomStep);
-        
+
         private int SegmentMargin => (int)(_segmentWidth * 0.1);
         private readonly int _marginTop = 50;
         private readonly int _marginBottom = 50;
-        
+
         public void Render(ImmediateDrawingContext context)
         {
             var leaseFeature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
-            
+
             if (leaseFeature is null)
             {
                 return;
             }
 
-            var visibleSegmentsCount = (int)(Bounds.Width / _segmentWidth);
-            var visibleDataSpan = data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, data.Length)];
-            var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
-            var priceRange = maxPrice - minPrice;
-            var pixelPerPriceUnit = (Bounds.Height - _marginTop - _marginBottom) / (double)priceRange;
-            
             using var lease = leaseFeature.Lease();
             var canvas = lease.SkCanvas;
             canvas.Save();
             canvas.Clear(SKColors.Moccasin);
 
+            if (Data is null)
+            {
+                canvas.DrawText("No data to display.",
+                    ((float)Bounds.Width / 2),
+                    ((float)Bounds.Height / 2),
+                    _barPaint);
+
+                return;
+            }
+
+            var visibleSegmentsCount = (int)(Bounds.Width / _segmentWidth);
+            var visibleDataSpan = Data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, Data.Length)];
+            var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
+            var priceRange = maxPrice - minPrice;
+            var pixelPerPriceUnit = (Bounds.Height - _marginTop - _marginBottom) / (double)priceRange;
+
             // 0.5f is initial value for pixel perfect drawing
-            var currentSegmentPosX = _segmentWidth * visibleSegmentsCount -  0.5f;
+            var currentSegmentPosX = _segmentWidth * visibleSegmentsCount - 0.5f;
 
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
@@ -124,13 +152,13 @@ public partial class ChartControl : UserControl
                 {
                     continue;
                 }
-                
+
                 var barData = visibleDataSpan[segmentIndex];
                 var segmentMiddle = currentSegmentPosX - (_segmentWidth / 2);
 
                 var barHighY = CalculateY(barData.High);
                 var barLowY = CalculateY(barData.Low);
-                
+
                 canvas.DrawLine(new SKPoint(segmentMiddle, barHighY),
                     new SKPoint(segmentMiddle, barLowY),
                     _barPaint);
@@ -139,20 +167,20 @@ public partial class ChartControl : UserControl
                     CalculateY(Math.Max(barData.Open, barData.Close)),
                     currentSegmentPosX - SegmentMargin,
                     CalculateY(Math.Min(barData.Open, barData.Close)));
-                
+
                 canvas.DrawRect(bodyRect, barData.Open > barData.Close ? _bearCandlePaint : _bullCandlePaint);
                 canvas.DrawRect(bodyRect, _candleBodyBorder);
-                
+
                 // canvas.DrawText(barData.Time.ToString("dd-MM"),
                 //     segmentMiddle,
                 //     CalculateY(barData.High),
                 //     _barPaint);
-                
+
                 currentSegmentPosX -= _segmentWidth;
             }
-            
+
             canvas.Restore();
-            
+
             return;
 
             float CalculateY(decimal price)
@@ -181,15 +209,16 @@ public partial class ChartControl : UserControl
                 {
                     currentMax = 0;
                 }
-                
+
                 return (currentMin, currentMax);
             }
         }
     }
-    
+
     public override void Render(DrawingContext context)
     {
-        _chartDrawOperation.BeginRender(_testData.Length - (int)ChartScrollBar.Value, new Rect(0, 0, Bounds.Width, Bounds.Height));
+        var dataShift = _data?.Length - (int)ChartScrollBar.Value ?? 0;
+        _chartDrawOperation.BeginRender(_data, dataShift, new Rect(0, 0, Bounds.Width, Bounds.Height));
         context.Custom(_chartDrawOperation);
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }
