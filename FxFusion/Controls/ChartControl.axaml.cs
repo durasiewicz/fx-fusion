@@ -30,18 +30,25 @@ public partial class ChartControl : UserControl
         ClipToBounds = true;
         _chartDrawOperation = new ChartDrawOperation();
         _dataSource = new StooqMarketDataSource();
-        SelectedSymbolComboBox.SelectionChanged += async (sender, args) =>
-        {
-            _data = null;
-            await LoadData();
-        };
-        SelectedSymbolComboBox.ItemsSource = _dataSource.AvailableSymbols.OrderBy(q => q).ToArray();
+        SelectedSymbolComboBox.ItemsSource = _dataSource.AvailableSymbols.ToArray();
         SelectedSymbolComboBox.SelectedIndex = 0;
+        SelectedTimeFrameComboBox.ItemsSource = _dataSource.AvailableTimeFrames.ToArray();
+        SelectedTimeFrameComboBox.SelectedIndex = 0;
+        
+        SelectedSymbolComboBox.SelectionChanged += OnSymbolOrTimeFrameChanged;
+        SelectedTimeFrameComboBox.SelectionChanged += OnSymbolOrTimeFrameChanged;
+    }
+
+    private async void OnSymbolOrTimeFrameChanged(object? sender, SelectionChangedEventArgs args)
+    {
+        _data = null;
+        await LoadData();
     }
 
     private async Task LoadData()
     {
-        _data = await _dataSource.GetData(SelectedSymbolComboBox.SelectedValue as string, "D");
+        _data = await _dataSource.GetData(SelectedSymbolComboBox.SelectedValue as string,
+            SelectedTimeFrameComboBox.SelectedValue as string);
         ChartScrollBar.Maximum = _data.Length;
         ChartScrollBar.Value = ChartScrollBar.Maximum;
     }

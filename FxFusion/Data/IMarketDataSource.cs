@@ -8,5 +8,5 @@ public interface IMarketDataSource<TSymbol, TTimeFrame>
 {
     IEnumerable<TSymbol> AvailableSymbols { get; }
     IEnumerable<TTimeFrame> AvailableTimeFrames { get; }
-    Task<Bar[]> GetData(TSymbol symbol, TTimeFrame timeFrame);
+    Task<Bar[]> GetData(TSymbol? symbol, TTimeFrame? timeFrame);
 }

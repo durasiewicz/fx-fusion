@@ -34,7 +34,7 @@ public class StooqMarketDataSource : IMarketDataSource<string, string>
         "M"
     };
 
-    public async Task<Bar[]> GetData(string symbol, string timeFrame)
+    public async Task<Bar[]> GetData(string? symbol, string? timeFrame)
     {
         if (string.IsNullOrEmpty(symbol))
         {
