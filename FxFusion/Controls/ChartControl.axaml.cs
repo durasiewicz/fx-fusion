@@ -38,7 +38,7 @@ public partial class ChartControl : UserControl
             if (args.Property.Name is nameof(Symbol) or nameof(TimeFrame))
             {
                 await LoadData();
-            } 
+            }
         };
 
         ZoomInCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomIn);
@@ -51,9 +51,9 @@ public partial class ChartControl : UserControl
         {
             return;
         }
-        
+
         _data = await _marketMarketDataSource.GetData(Symbol, TimeFrame);
-        
+
         AvailableBarsCount = _data.Length;
         BarsShift = _data.Length;
     }
@@ -175,6 +175,14 @@ public partial class ChartControl : UserControl
             Color = SKColors.Black,
             Style = SKPaintStyle.Stroke
         };
+        
+        private readonly SKPaint _scalePaint = new()
+        {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke,
+            FilterQuality = SKFilterQuality.High,
+        };
 
         private int _segmentWidth = 50;
         private readonly int _zoomStep = 2;
@@ -183,8 +191,9 @@ public partial class ChartControl : UserControl
         public void ZoomOut() => _segmentWidth = Math.Max(10, _segmentWidth - _zoomStep);
 
         private int SegmentMargin => (int)(_segmentWidth * 0.1);
-        private readonly int _marginTop = 50;
-        private readonly int _marginBottom = 50;
+        private readonly int _marginTop = 20;
+        private readonly int _marginBottom = 20;
+        private readonly int _marginRight = 50;
 
         public void Render(ImmediateDrawingContext context)
         {
@@ -210,14 +219,16 @@ public partial class ChartControl : UserControl
                 return;
             }
 
-            var visibleSegmentsCount = (int)(Bounds.Width / _segmentWidth);
+            var visibleSegmentsCount = (int)((Bounds.Width - _marginRight) / _segmentWidth);
             var visibleDataSpan = Data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, Data.Length)];
             var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
             var priceRange = maxPrice - minPrice;
             var pixelPerPriceUnit = (Bounds.Height - _marginTop - _marginBottom) / (double)priceRange;
 
             // 0.5f is initial value for pixel perfect drawing
-            var currentSegmentPosX = _segmentWidth * visibleSegmentsCount - 0.5f;
+            var currentSegmentPosX = (float)Bounds.Width - _marginRight - 0.5f;
+          
+            DrawYScale();
 
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
@@ -256,6 +267,27 @@ public partial class ChartControl : UserControl
 
             return;
 
+            double CalculateYScaleStep(double range)
+            {
+                var visibleSteps = Bounds.Height / 20;
+                var roughStep = range / (visibleSteps - 1);
+                var exponent = Math.Floor(Math.Log10(roughStep));
+                var magnitude = Math.Pow(10, exponent);
+                var fraction = roughStep / magnitude;
+
+                fraction = fraction switch
+                {
+                    < 2 => 1,
+                    < 3 => 2,
+                    < 6 => 3,
+                    < 7 => 5,
+                    < 8 => 6,
+                    _ => 10
+                };
+
+                return fraction * Math.Pow(10, exponent);
+            }
+
             float CalculateY(decimal price)
             {
                 var priceDataMinDiff = price - minPrice;
@@ -285,9 +317,39 @@ public partial class ChartControl : UserControl
 
                 return (currentMin, currentMax);
             }
+
+            void DrawYScale()
+            {
+                var scaleYStep = CalculateYScaleStep((double)maxPrice);
+                var scaleYMax = Math.Floor((float)maxPrice / scaleYStep) * scaleYStep;
+                var scaleYMin = Math.Floor((float)minPrice / scaleYStep) * scaleYStep;
+                var currentPrice = scaleYMax;
+
+                var scaleBorderX = (float)Bounds.Width - _marginRight + 5 + 0.5f;
+                
+                canvas.DrawLine(new SKPoint(scaleBorderX, 0),
+                    new SKPoint(scaleBorderX, (float)Bounds.Height),
+                    _barPaint);
+            
+                while (currentPrice >= scaleYMin)
+                {
+                    var posY = CalculateY((decimal)currentPrice);
+                    
+                    canvas.DrawLine(new SKPoint(scaleBorderX, posY),
+                        new SKPoint(scaleBorderX + 5, posY),
+                        _barPaint);
+                    
+                    canvas.DrawText(currentPrice.ToString("0.##"),
+                        ((float)Bounds.Width - _marginRight + 15),
+                        posY,
+                        _scalePaint);
+                
+                    currentPrice -= scaleYStep;
+                }
+            }
         }
     }
-    
+
     public override void Render(DrawingContext context)
     {
         var dataShift = _data?.Length - BarsShift ?? 0;
