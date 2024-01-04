@@ -13,18 +13,8 @@ public class StooqMarketDataSource : IMarketDataSource
 {
     public IEnumerable<string> AvailableSymbols => new[]
     {
-        "EUR/USD",
-        "GBP/USD",
-        "USD/CHF",
-        "USD/JPY",
-        "EUR/JPY",
-        "USD/CAD",
-        "AUD/USD",
-        "NZD/USD",
-        "GBP/JPY",
-        "EUR/GBP",
-        "AUD/JPY",
-        "AUD/CAD"
+        "PKO",
+        "XTB"
     };
 
     public IEnumerable<string> AvailableTimeFrames => new[]

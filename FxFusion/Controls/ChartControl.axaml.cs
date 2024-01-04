@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -11,6 +12,7 @@ using Avalonia.Skia;
 using Avalonia.Threading;
 using FxFusion.Data;
 using FxFusion.Models;
+using ReactiveUI;
 using SkiaSharp;
 
 namespace FxFusion.Controls;
@@ -38,6 +40,9 @@ public partial class ChartControl : UserControl
                 await LoadData();
             } 
         };
+
+        ZoomInCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomIn);
+        ZoomOutCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomOut);
     }
 
     private async Task LoadData()
@@ -291,6 +296,6 @@ public partial class ChartControl : UserControl
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }
 
-    private void ZoomIn(object? sender, RoutedEventArgs e) => _chartDrawOperation.ZoomIn();
-    private void ZoomOut(object? sender, RoutedEventArgs e) => _chartDrawOperation.ZoomOut();
+    public ReactiveCommand<Unit, Unit> ZoomInCommand { get; }
+    public ReactiveCommand<Unit, Unit> ZoomOutCommand { get; }
 }
