@@ -41,6 +41,8 @@ public partial class ChartControl : UserControl
             }
         };
 
+        PointerMoved += (sender, args) => _pointerPosition = args.GetPosition(this);
+
         ZoomInCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomIn);
         ZoomOutCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomOut);
     }
@@ -128,25 +130,34 @@ public partial class ChartControl : UserControl
             defaultBindingMode: BindingMode.TwoWay,
             enableDataValidation: true);
 
+    private Point _pointerPosition;
+
     private class ChartDrawOperation : ICustomDrawOperation
     {
         public void Dispose()
         {
         }
 
-        public void BeginRender(Bar[]? data, int dataShift, Rect bounds)
+        public void BeginRender(Bar[]? data, 
+            int dataShift, 
+            Rect bounds,
+            Point pointerPosition)
         {
             Data = data;
             Bounds = bounds;
             DataShift = dataShift;
+            PointerPosition = pointerPosition;
         }
 
+        private Point PointerPosition { get; set; }
         private Bar[]? Data { get; set; }
         private int DataShift { get; set; }
 
         public Rect Bounds { get; private set; }
         public bool HitTest(Point p) => false;
         public bool Equals(ICustomDrawOperation? other) => false;
+
+        public bool IsCrosshairVisible { get; set; }
 
         private readonly SKPaint _barPaint = new()
         {
@@ -263,6 +274,17 @@ public partial class ChartControl : UserControl
                 currentSegmentPosX -= _segmentWidth;
             }
 
+            if (IsCrosshairVisible)
+            {
+                canvas.DrawLine(new SKPoint(0, (float)PointerPosition.Y - 0.5f),
+                    new SKPoint((float)Bounds.Width, (float)PointerPosition.Y - 0.5f),
+                    _barPaint);
+                
+                canvas.DrawLine(new SKPoint((float)PointerPosition.X - 0.5f, 0),
+                    new SKPoint((float)PointerPosition.X - 0.5f, (float)Bounds.Height),
+                    _barPaint);
+            }
+            
             canvas.Restore();
 
             return;
@@ -353,11 +375,22 @@ public partial class ChartControl : UserControl
     public override void Render(DrawingContext context)
     {
         var dataShift = _data?.Length - BarsShift ?? 0;
-        _chartDrawOperation.BeginRender(_data, dataShift, new Rect(0, 0, Bounds.Width, Bounds.Height));
+        
+        _chartDrawOperation.BeginRender(_data, 
+            dataShift, 
+            new Rect(0, 0, Bounds.Width, Bounds.Height),
+            _pointerPosition);
+        
         context.Custom(_chartDrawOperation);
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }
 
+    public bool IsCrosshairVisible
+    {
+        get => _chartDrawOperation.IsCrosshairVisible;
+        set => _chartDrawOperation.IsCrosshairVisible = value;
+    }
+    
     public ReactiveCommand<Unit, Unit> ZoomInCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomOutCommand { get; }
 }
