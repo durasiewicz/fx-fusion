@@ -138,8 +138,8 @@ public partial class ChartControl : UserControl
         {
         }
 
-        public void BeginRender(Bar[]? data, 
-            int dataShift, 
+        public void BeginRender(Bar[]? data,
+            int dataShift,
             Rect bounds,
             Point pointerPosition)
         {
@@ -186,12 +186,20 @@ public partial class ChartControl : UserControl
             Color = SKColors.Black,
             Style = SKPaintStyle.Stroke
         };
-        
+
         private readonly SKPaint _scalePaint = new()
         {
             IsAntialias = true,
             Color = SKColors.Black,
-            Style = SKPaintStyle.Stroke,
+            Style = SKPaintStyle.Fill,
+            FilterQuality = SKFilterQuality.High,
+        };
+
+        private readonly SKPaint _scaleLabelText = new()
+        {
+            IsAntialias = true,
+            Color = SKColors.White,
+            //Style = SKPaintStyle.Stroke,
             FilterQuality = SKFilterQuality.High,
         };
 
@@ -238,8 +246,6 @@ public partial class ChartControl : UserControl
 
             // 0.5f is initial value for pixel perfect drawing
             var currentSegmentPosX = (float)Bounds.Width - _marginRight - 0.5f;
-          
-            DrawYScale();
 
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
@@ -279,12 +285,14 @@ public partial class ChartControl : UserControl
                 canvas.DrawLine(new SKPoint(0, (float)PointerPosition.Y - 0.5f),
                     new SKPoint((float)Bounds.Width, (float)PointerPosition.Y - 0.5f),
                     _barPaint);
-                
+
                 canvas.DrawLine(new SKPoint((float)PointerPosition.X - 0.5f, 0),
                     new SKPoint((float)PointerPosition.X - 0.5f, (float)Bounds.Height),
                     _barPaint);
             }
-            
+
+            DrawYScale();
+
             canvas.Restore();
 
             return;
@@ -314,6 +322,12 @@ public partial class ChartControl : UserControl
             {
                 var priceDataMinDiff = price - minPrice;
                 return (float)(Bounds.Height - _marginTop - (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit));
+            }
+
+            float CalculatePriceFromY(double posY)
+            {
+                var priceDataMinDiff = (Bounds.Height - _marginTop - posY) / (float)pixelPerPriceUnit;
+                return (float)(minPrice + (decimal)priceDataMinDiff);
             }
 
             (decimal min, decimal max) CalculateMinMaxPrice(ReadOnlySpan<Bar> dataSlice)
@@ -348,25 +362,38 @@ public partial class ChartControl : UserControl
                 var currentPrice = scaleYMax;
 
                 var scaleBorderX = (float)Bounds.Width - _marginRight + 5 + 0.5f;
-                
+
                 canvas.DrawLine(new SKPoint(scaleBorderX, 0),
                     new SKPoint(scaleBorderX, (float)Bounds.Height),
                     _barPaint);
-            
+
                 while (currentPrice >= scaleYMin)
                 {
                     var posY = CalculateY((decimal)currentPrice);
-                    
+
                     canvas.DrawLine(new SKPoint(scaleBorderX, posY),
                         new SKPoint(scaleBorderX + 5, posY),
                         _barPaint);
-                    
+
                     canvas.DrawText(currentPrice.ToString("0.##"),
                         ((float)Bounds.Width - _marginRight + 15),
                         posY,
                         _scalePaint);
-                
+
                     currentPrice -= scaleYStep;
+                }
+
+                if (IsCrosshairVisible)
+                {
+                    canvas.DrawRect(new SKRect(scaleBorderX,
+                        (float)(PointerPosition.Y - 10.5f),
+                        (float)Bounds.Width,
+                        (float)(PointerPosition.Y + 10.5f)), _scalePaint);
+
+                    canvas.DrawText(CalculatePriceFromY(PointerPosition.Y).ToString("0.##"),
+                        scaleBorderX + 10,
+                        (float)PointerPosition.Y + 5,
+                        _scaleLabelText);
                 }
             }
         }
@@ -375,12 +402,12 @@ public partial class ChartControl : UserControl
     public override void Render(DrawingContext context)
     {
         var dataShift = _data?.Length - BarsShift ?? 0;
-        
-        _chartDrawOperation.BeginRender(_data, 
-            dataShift, 
+
+        _chartDrawOperation.BeginRender(_data,
+            dataShift,
             new Rect(0, 0, Bounds.Width, Bounds.Height),
             _pointerPosition);
-        
+
         context.Custom(_chartDrawOperation);
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }
@@ -390,7 +417,7 @@ public partial class ChartControl : UserControl
         get => _chartDrawOperation.IsCrosshairVisible;
         set => _chartDrawOperation.IsCrosshairVisible = value;
     }
-    
+
     public ReactiveCommand<Unit, Unit> ZoomInCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomOutCommand { get; }
 }
