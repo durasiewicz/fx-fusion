@@ -141,14 +141,17 @@ public partial class ChartControl : UserControl
         public void BeginRender(Bar[]? data,
             int dataShift,
             Rect bounds,
-            Point pointerPosition)
+            Point pointerPosition,
+            bool isPointerOverControl)
         {
             Data = data;
             Bounds = bounds;
             DataShift = dataShift;
             PointerPosition = pointerPosition;
+            IsPointerOverControl = isPointerOverControl;
         }
 
+        private bool IsPointerOverControl { get; set; }
         private Point PointerPosition { get; set; }
         private Bar[]? Data { get; set; }
         private int DataShift { get; set; }
@@ -280,7 +283,7 @@ public partial class ChartControl : UserControl
                 currentSegmentPosX -= _segmentWidth;
             }
 
-            if (IsCrosshairVisible)
+            if (IsCrosshairVisible && IsPointerOverControl)
             {
                 canvas.DrawLine(new SKPoint(0, (float)PointerPosition.Y - 0.5f),
                     new SKPoint((float)Bounds.Width, (float)PointerPosition.Y - 0.5f),
@@ -383,7 +386,7 @@ public partial class ChartControl : UserControl
                     currentPrice -= scaleYStep;
                 }
 
-                if (IsCrosshairVisible)
+                if (IsCrosshairVisible && IsPointerOverControl)
                 {
                     canvas.DrawRect(new SKRect(scaleBorderX,
                         (float)(PointerPosition.Y - 10.5f),
@@ -406,7 +409,8 @@ public partial class ChartControl : UserControl
         _chartDrawOperation.BeginRender(_data,
             dataShift,
             new Rect(0, 0, Bounds.Width, Bounds.Height),
-            _pointerPosition);
+            _pointerPosition,
+            IsPointerOver);
 
         context.Custom(_chartDrawOperation);
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
