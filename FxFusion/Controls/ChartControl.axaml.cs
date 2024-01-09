@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
+using Avalonia.Dialogs;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
@@ -250,6 +251,8 @@ public partial class ChartControl : UserControl
             // 0.5f is initial value for pixel perfect drawing
             var currentSegmentPosX = (float)Bounds.Width - _marginRight - 0.5f;
 
+            (float, DateTime)? hoveredPosTime = null;
+
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
                 if (segmentIndex >= visibleDataSpan.Length)
@@ -280,6 +283,13 @@ public partial class ChartControl : UserControl
                 //     CalculateY(barData.High),
                 //     _barPaint);
 
+                if (IsPointerOverControl &&
+                    PointerPosition.X <= currentSegmentPosX &&
+                    PointerPosition.X >= currentSegmentPosX - _segmentWidth)
+                {
+                    hoveredPosTime = (segmentMiddle, barData.Time);
+                }
+                
                 currentSegmentPosX -= _segmentWidth;
             }
 
@@ -289,13 +299,18 @@ public partial class ChartControl : UserControl
                     new SKPoint((float)Bounds.Width, (float)PointerPosition.Y - 0.5f),
                     _barPaint);
 
-                canvas.DrawLine(new SKPoint((float)PointerPosition.X - 0.5f, 0),
-                    new SKPoint((float)PointerPosition.X - 0.5f, (float)Bounds.Height),
-                    _barPaint);
+                if (hoveredPosTime is not null)
+                {
+                    var (posX, _) = hoveredPosTime.Value;
+                    canvas.DrawLine(new SKPoint(posX, 0),
+                        new SKPoint(posX, (float)Bounds.Height),
+                        _barPaint);
+                }
             }
 
             DrawYScale();
-
+            DrawXScale();
+            
             canvas.Restore();
 
             return;
@@ -324,7 +339,7 @@ public partial class ChartControl : UserControl
             float CalculateY(decimal price)
             {
                 var priceDataMinDiff = price - minPrice;
-                return (float)(Bounds.Height - _marginTop - (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit));
+                return (float)(Bounds.Height - _marginTop - _marginBottom - (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit)) + (_marginTop / 2);
             }
 
             float CalculatePriceFromY(double posY)
@@ -357,6 +372,31 @@ public partial class ChartControl : UserControl
                 return (currentMin, currentMax);
             }
 
+            void DrawXScale()
+            {
+                var posY = (float)(Bounds.Height - (_marginBottom + 5));
+                
+                canvas.DrawLine(new SKPoint(0, posY),
+                    new SKPoint((float)Bounds.Width, posY),
+                    _barPaint);
+
+                if (hoveredPosTime is not null && IsCrosshairVisible)
+                {
+                    var (posX, time) = hoveredPosTime.Value;
+                    
+                    canvas.DrawRect(new SKRect(posX - 60,
+                        posY,
+                        posX + 60,
+                        (float)Bounds.Height),
+                        _scalePaint);
+
+                    canvas.DrawText(time.ToString(),
+                        posX - 50,
+                        posY + 18,
+                        _scaleLabelText);
+                }
+            }
+            
             void DrawYScale()
             {
                 var scaleYStep = CalculateYScaleStep((double)maxPrice);
