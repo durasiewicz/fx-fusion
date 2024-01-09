@@ -43,6 +43,19 @@ public partial class ChartControl : UserControl
         };
 
         PointerMoved += (sender, args) => _pointerPosition = args.GetPosition(this);
+        PointerWheelChanged += (sender, args) =>
+        {
+            switch (args.Delta)
+            {
+                case { Y: > 0 }:
+                    _chartDrawOperation.ZoomIn();
+                    break;
+
+                case { Y: < 0 }:
+                    _chartDrawOperation.ZoomOut();
+                    break;
+            }
+        };
 
         ZoomInCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomIn);
         ZoomOutCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomOut);
@@ -210,8 +223,8 @@ public partial class ChartControl : UserControl
         private int _segmentWidth = 50;
         private readonly int _zoomStep = 2;
 
-        public void ZoomIn() => _segmentWidth = Math.Min(50, _segmentWidth + _zoomStep);
-        public void ZoomOut() => _segmentWidth = Math.Max(10, _segmentWidth - _zoomStep);
+        public void ZoomIn() => _segmentWidth = Math.Min(80, _segmentWidth + _zoomStep);
+        public void ZoomOut() => _segmentWidth = Math.Max(2, _segmentWidth - _zoomStep);
 
         private int SegmentMargin => (int)(_segmentWidth * 0.1);
         private readonly int _marginTop = 20;
@@ -289,7 +302,7 @@ public partial class ChartControl : UserControl
                 {
                     hoveredPosTime = (segmentMiddle, barData.Time);
                 }
-                
+
                 currentSegmentPosX -= _segmentWidth;
             }
 
@@ -310,7 +323,7 @@ public partial class ChartControl : UserControl
 
             DrawYScale();
             DrawXScale();
-            
+
             canvas.Restore();
 
             return;
@@ -339,7 +352,8 @@ public partial class ChartControl : UserControl
             float CalculateY(decimal price)
             {
                 var priceDataMinDiff = price - minPrice;
-                return (float)(Bounds.Height - _marginTop - _marginBottom - (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit)) + (_marginTop / 2);
+                return (float)(Bounds.Height - _marginTop - _marginBottom -
+                               (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit)) + (_marginTop / 2);
             }
 
             float CalculatePriceFromY(double posY)
@@ -375,7 +389,7 @@ public partial class ChartControl : UserControl
             void DrawXScale()
             {
                 var posY = (float)(Bounds.Height - (_marginBottom + 5));
-                
+
                 canvas.DrawLine(new SKPoint(0, posY),
                     new SKPoint((float)Bounds.Width, posY),
                     _barPaint);
@@ -383,11 +397,11 @@ public partial class ChartControl : UserControl
                 if (hoveredPosTime is not null && IsCrosshairVisible)
                 {
                     var (posX, time) = hoveredPosTime.Value;
-                    
+
                     canvas.DrawRect(new SKRect(posX - 60,
-                        posY,
-                        posX + 60,
-                        (float)Bounds.Height),
+                            posY,
+                            posX + 60,
+                            (float)Bounds.Height),
                         _scalePaint);
 
                     canvas.DrawText(time.ToString(),
@@ -396,7 +410,7 @@ public partial class ChartControl : UserControl
                         _scaleLabelText);
                 }
             }
-            
+
             void DrawYScale()
             {
                 var scaleYStep = CalculateYScaleStep((double)maxPrice);
