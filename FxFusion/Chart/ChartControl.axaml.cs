@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
-using Avalonia.Dialogs;
-using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
@@ -16,7 +14,7 @@ using FxFusion.Models;
 using ReactiveUI;
 using SkiaSharp;
 
-namespace FxFusion.Controls;
+namespace FxFusion.Chart;
 
 public partial class ChartControl : UserControl
 {
@@ -227,9 +225,8 @@ public partial class ChartControl : UserControl
         public void ZoomOut() => _segmentWidth = Math.Max(2, _segmentWidth - _zoomStep);
 
         private int SegmentMargin => (int)(_segmentWidth * 0.1);
-        private readonly int _marginTop = 20;
-        private readonly int _marginBottom = 20;
-        private readonly int _marginRight = 50;
+
+        private readonly ChartSettings _settings = new(); 
 
         public void Render(ImmediateDrawingContext context)
         {
@@ -255,14 +252,14 @@ public partial class ChartControl : UserControl
                 return;
             }
 
-            var visibleSegmentsCount = (int)((Bounds.Width - _marginRight) / _segmentWidth);
+            var visibleSegmentsCount = (int)((Bounds.Width - _settings.MarginRight) / _segmentWidth);
             var visibleDataSpan = Data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, Data.Length)];
             var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
             var priceRange = maxPrice - minPrice;
-            var pixelPerPriceUnit = (Bounds.Height - _marginTop - _marginBottom) / (double)priceRange;
+            var pixelPerPriceUnit = (Bounds.Height - _settings.MarginTop - _settings.MarginBottom) / (double)priceRange;
 
             // 0.5f is initial value for pixel perfect drawing
-            var currentSegmentPosX = (float)Bounds.Width - _marginRight - 0.5f;
+            var currentSegmentPosX = (float)Bounds.Width - _settings.MarginRight - 0.5f;
 
             (float, DateTime)? hoveredPosTime = null;
 
@@ -352,13 +349,13 @@ public partial class ChartControl : UserControl
             float CalculateY(decimal price)
             {
                 var priceDataMinDiff = price - minPrice;
-                return (float)(Bounds.Height - _marginTop - _marginBottom -
-                               (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit)) + (_marginTop / 2);
+                return (float)(Bounds.Height - _settings.MarginTop - _settings.MarginBottom -
+                               (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit)) + (_settings.MarginTop / 2);
             }
 
             float CalculatePriceFromY(double posY)
             {
-                var priceDataMinDiff = (Bounds.Height - _marginTop - posY) / (float)pixelPerPriceUnit;
+                var priceDataMinDiff = (Bounds.Height - _settings.MarginTop - posY) / (float)pixelPerPriceUnit;
                 return (float)(minPrice + (decimal)priceDataMinDiff);
             }
 
@@ -388,7 +385,7 @@ public partial class ChartControl : UserControl
 
             void DrawXScale()
             {
-                var posY = (float)(Bounds.Height - (_marginBottom + 5));
+                var posY = (float)(Bounds.Height - (_settings.MarginBottom + 5));
 
                 canvas.DrawLine(new SKPoint(0, posY),
                     new SKPoint((float)Bounds.Width, posY),
@@ -418,7 +415,7 @@ public partial class ChartControl : UserControl
                 var scaleYMin = Math.Floor((float)minPrice / scaleYStep) * scaleYStep;
                 var currentPrice = scaleYMax;
 
-                var scaleBorderX = (float)Bounds.Width - _marginRight + 5 + 0.5f;
+                var scaleBorderX = (float)Bounds.Width - _settings.MarginRight + 5 + 0.5f;
 
                 canvas.DrawLine(new SKPoint(scaleBorderX, 0),
                     new SKPoint(scaleBorderX, (float)Bounds.Height),
@@ -433,7 +430,7 @@ public partial class ChartControl : UserControl
                         _barPaint);
 
                     canvas.DrawText(currentPrice.ToString("0.##"),
-                        ((float)Bounds.Width - _marginRight + 15),
+                        ((float)Bounds.Width - _settings.MarginRight + 15),
                         posY,
                         _scalePaint);
 
