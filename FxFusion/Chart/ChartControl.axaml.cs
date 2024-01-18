@@ -262,6 +262,12 @@ public partial class ChartControl : UserControl
             var currentSegmentPosX = (float)Bounds.Width - _settings.MarginRight - 0.5f;
 
             (float, DateTime)? hoveredPosTime = null;
+            
+            var chartFrame = new ChartFrame(canvas,
+                Bounds,
+                _settings,
+                minPrice,
+                maxPrice);
 
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
@@ -273,17 +279,17 @@ public partial class ChartControl : UserControl
                 var barData = visibleDataSpan[segmentIndex];
                 var segmentMiddle = currentSegmentPosX - (_segmentWidth / 2);
 
-                var barHighY = CalculateY(barData.High);
-                var barLowY = CalculateY(barData.Low);
+                var barHighY = chartFrame.PriceToPosY(barData.High);
+                var barLowY = chartFrame.PriceToPosY(barData.Low);
 
                 canvas.DrawLine(new SKPoint(segmentMiddle, barHighY),
                     new SKPoint(segmentMiddle, barLowY),
                     _barPaint);
 
                 var bodyRect = new SKRect(currentSegmentPosX - _segmentWidth + SegmentMargin,
-                    CalculateY(Math.Max(barData.Open, barData.Close)),
+                    chartFrame.PriceToPosY(Math.Max(barData.Open, barData.Close)),
                     currentSegmentPosX - SegmentMargin,
-                    CalculateY(Math.Min(barData.Open, barData.Close)));
+                    chartFrame.PriceToPosY(Math.Min(barData.Open, barData.Close)));
 
                 canvas.DrawRect(bodyRect, barData.Open > barData.Close ? _bearCandlePaint : _bullCandlePaint);
                 canvas.DrawRect(bodyRect, _candleBodyBorder);
@@ -345,20 +351,7 @@ public partial class ChartControl : UserControl
 
                 return fraction * Math.Pow(10, exponent);
             }
-
-            float CalculateY(decimal price)
-            {
-                var priceDataMinDiff = price - minPrice;
-                return (float)(Bounds.Height - _settings.MarginTop - _settings.MarginBottom -
-                               (double)(priceDataMinDiff * (decimal)pixelPerPriceUnit)) + (_settings.MarginTop / 2);
-            }
-
-            float CalculatePriceFromY(double posY)
-            {
-                var priceDataMinDiff = (Bounds.Height - _settings.MarginTop - posY) / (float)pixelPerPriceUnit;
-                return (float)(minPrice + (decimal)priceDataMinDiff);
-            }
-
+            
             (decimal min, decimal max) CalculateMinMaxPrice(ReadOnlySpan<Bar> dataSlice)
             {
                 var currentMin = decimal.MaxValue;
@@ -423,7 +416,7 @@ public partial class ChartControl : UserControl
 
                 while (currentPrice >= scaleYMin)
                 {
-                    var posY = CalculateY((decimal)currentPrice);
+                    var posY = chartFrame.PriceToPosY((decimal)currentPrice);
 
                     canvas.DrawLine(new SKPoint(scaleBorderX, posY),
                         new SKPoint(scaleBorderX + 5, posY),
@@ -444,7 +437,7 @@ public partial class ChartControl : UserControl
                         (float)Bounds.Width,
                         (float)(PointerPosition.Y + 10.5f)), _scalePaint);
 
-                    canvas.DrawText(CalculatePriceFromY(PointerPosition.Y).ToString("0.##"),
+                    canvas.DrawText(chartFrame.PosYToPrice(PointerPosition.Y).ToString("0.##"),
                         scaleBorderX + 10,
                         (float)PointerPosition.Y + 5,
                         _scaleLabelText);
