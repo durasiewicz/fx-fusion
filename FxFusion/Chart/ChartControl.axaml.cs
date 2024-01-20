@@ -10,6 +10,7 @@ using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
 using FxFusion.Data;
+using FxFusion.Indicators;
 using FxFusion.Models;
 using ReactiveUI;
 using SkiaSharp;
@@ -226,8 +227,10 @@ public partial class ChartControl : UserControl
 
         private int SegmentMargin => (int)(_segmentWidth * 0.1);
 
-        private readonly ChartSettings _settings = new(); 
+        private readonly ChartSettings _settings = new();
 
+        private IIndicator _priceIndicator = new CandlePriceIndicator();
+        
         public void Render(ImmediateDrawingContext context)
         {
             var leaseFeature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
@@ -276,34 +279,17 @@ public partial class ChartControl : UserControl
                     continue;
                 }
 
-                var barData = visibleDataSpan[segmentIndex];
-                var segmentMiddle = currentSegmentPosX - (_segmentWidth / 2);
-
-                var barHighY = chartFrame.PriceToPosY(barData.High);
-                var barLowY = chartFrame.PriceToPosY(barData.Low);
-
-                canvas.DrawLine(new SKPoint(segmentMiddle, barHighY),
-                    new SKPoint(segmentMiddle, barLowY),
-                    _barPaint);
-
-                var bodyRect = new SKRect(currentSegmentPosX - _segmentWidth + SegmentMargin,
-                    chartFrame.PriceToPosY(Math.Max(barData.Open, barData.Close)),
-                    currentSegmentPosX - SegmentMargin,
-                    chartFrame.PriceToPosY(Math.Min(barData.Open, barData.Close)));
-
-                canvas.DrawRect(bodyRect, barData.Open > barData.Close ? _bearCandlePaint : _bullCandlePaint);
-                canvas.DrawRect(bodyRect, _candleBodyBorder);
-
-                // canvas.DrawText(barData.Time.ToString("dd-MM"),
-                //     segmentMiddle,
-                //     CalculateY(barData.High),
-                //     _barPaint);
-
+                var chartSegment = new ChartSegment(visibleDataSpan[segmentIndex],
+                    currentSegmentPosX,
+                    _segmentWidth);
+                
+                _priceIndicator.Draw(chartFrame, chartSegment);
+                
                 if (IsPointerOverControl &&
                     PointerPosition.X <= currentSegmentPosX &&
                     PointerPosition.X >= currentSegmentPosX - _segmentWidth)
                 {
-                    hoveredPosTime = (segmentMiddle, barData.Time);
+                    hoveredPosTime = (currentSegmentPosX - _segmentWidth / 2, chartSegment.Bar.Time);
                 }
 
                 currentSegmentPosX -= _segmentWidth;
