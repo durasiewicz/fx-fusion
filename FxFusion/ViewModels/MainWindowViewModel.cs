@@ -1,4 +1,8 @@
-﻿using FxFusion.Data;
+﻿using System.Reactive;
+using FxFusion.Chart;
+using FxFusion.Data;
+using FxFusion.Indicators;
+using Microsoft.VisualBasic.CompilerServices;
 using ReactiveUI;
 
 namespace FxFusion.ViewModels;
@@ -6,6 +10,26 @@ namespace FxFusion.ViewModels;
 public class MainWindowViewModel : ViewModelBase
 {
     public IMarketDataSource MarketDataSource { get; set; } = new StooqMarketDataSource();
+
+    private void ShowCandles() => PriceIndicator = new CandlePriceIndicator();
+    private void ShowBars() => PriceIndicator = new BarPriceIndicator();
+    
+    public MainWindowViewModel()
+    {
+        ShowAsCandles = ReactiveCommand.Create(ShowCandles);
+        ShowAsBars = ReactiveCommand.Create(ShowBars);
+    }
+    
+    public ReactiveCommand<Unit, Unit> ShowAsCandles { get; }
+    public ReactiveCommand<Unit, Unit> ShowAsBars { get; }
+    
+    private IIndicator _priceIndicator = new CandlePriceIndicator();
+    
+    public IIndicator PriceIndicator
+    {
+        get => _priceIndicator;
+        set => this.RaiseAndSetIfChanged(ref _priceIndicator, value);
+    }
 
     private int _barShift;
     
@@ -32,7 +56,7 @@ public class MainWindowViewModel : ViewModelBase
     }
     
     private string? _selectedTimeFrame;
-    
+
     public string? SelectedTimeFrame
     {
         get => _selectedTimeFrame;

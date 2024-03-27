@@ -24,6 +24,7 @@ public partial class ChartControl : UserControl
     private IMarketDataSource? _marketMarketDataSource;
     private int _availableBarsCount;
     private int _barsShift;
+    private IIndicator _priceIndicator;
     private string? _timeFrame;
     private string? _symbol;
 
@@ -142,6 +143,20 @@ public partial class ChartControl : UserControl
             (o, v) => o.AvailableBarsCount = v,
             defaultBindingMode: BindingMode.TwoWay,
             enableDataValidation: true);
+    
+    public IIndicator PriceIndicator
+    {
+        get => _priceIndicator;
+        set => SetAndRaise(PriceIndicatorProperty, ref _priceIndicator, value);
+    }
+    
+    public static readonly DirectProperty<ChartControl, IIndicator> PriceIndicatorProperty =
+        AvaloniaProperty.RegisterDirect<ChartControl, IIndicator>(
+            nameof(AvailableBarsCount),
+            o => o.PriceIndicator,
+            (o, v) => o.PriceIndicator = v,
+            defaultBindingMode: BindingMode.TwoWay,
+            enableDataValidation: true);
 
     private Point _pointerPosition;
 
@@ -155,13 +170,15 @@ public partial class ChartControl : UserControl
             int dataShift,
             Rect bounds,
             Point pointerPosition,
-            bool isPointerOverControl)
+            bool isPointerOverControl,
+            IIndicator priceIndicator)
         {
             Data = data;
             Bounds = bounds;
             DataShift = dataShift;
             PointerPosition = pointerPosition;
             IsPointerOverControl = isPointerOverControl;
+            _priceIndicator = priceIndicator ?? new CandlePriceIndicator();
         }
 
         private bool IsPointerOverControl { get; set; }
@@ -225,7 +242,6 @@ public partial class ChartControl : UserControl
         public void ZoomIn() => _segmentWidth = Math.Min(80, _segmentWidth + _zoomStep);
         public void ZoomOut() => _segmentWidth = Math.Max(2, _segmentWidth - _zoomStep);
 
-        private int SegmentMargin => (int)(_segmentWidth * 0.1);
 
         private readonly ChartSettings _settings = new();
 
@@ -259,7 +275,6 @@ public partial class ChartControl : UserControl
             var visibleDataSpan = Data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, Data.Length)];
             var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
             var priceRange = maxPrice - minPrice;
-            var pixelPerPriceUnit = (Bounds.Height - _settings.MarginTop - _settings.MarginBottom) / (double)priceRange;
 
             // 0.5f is initial value for pixel perfect drawing
             var currentSegmentPosX = (float)Bounds.Width - _settings.MarginRight - 0.5f;
@@ -440,7 +455,8 @@ public partial class ChartControl : UserControl
             dataShift,
             new Rect(0, 0, Bounds.Width, Bounds.Height),
             _pointerPosition,
-            IsPointerOver);
+            IsPointerOver,
+            _priceIndicator);
 
         context.Custom(_chartDrawOperation);
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
