@@ -28,7 +28,7 @@ public class StooqMarketDataSource : IMarketDataSource
     {
         if (string.IsNullOrEmpty(symbol) || string.IsNullOrEmpty(timeFrame))
         {
-            return Array.Empty<Bar>();
+            return [];
         }
         
         if (!Directory.Exists("data"))
