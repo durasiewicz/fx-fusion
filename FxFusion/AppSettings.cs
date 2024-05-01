@@ -19,6 +19,13 @@ public static class AppSettings
         FilterQuality = SKFilterQuality.High,
     };
     
+    public static readonly SKPaint ScaleTextPaint = new()
+    {
+        IsAntialias = true,
+        Color = SKColors.Black,
+        FilterQuality = SKFilterQuality.High,
+    };
+    
     public static readonly SKPaint ScaleBorderPaint = new()
     {
         IsAntialias = true,

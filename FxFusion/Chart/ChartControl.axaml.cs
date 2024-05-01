@@ -241,7 +241,6 @@ public partial class ChartControl : UserControl
             var visibleSegmentsCount = (int)((Bounds.Width - _settings.MarginRight) / _segmentWidth);
             var visibleDataSpan = Data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, Data.Length)];
             var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
-            var priceRange = maxPrice - minPrice;
 
             // 0.5f is initial value for pixel perfect drawing
             var currentSegmentPosX = (float)Bounds.Width - _settings.MarginRight - 0.5f;
@@ -253,7 +252,18 @@ public partial class ChartControl : UserControl
                 _settings,
                 minPrice,
                 maxPrice);
+            
+            var timeLabelFormattedText = new FormattedText(DateTime.Now.ToString("yyyy-MM-dd"),
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(FontFamily.Default),
+                AppSettings.ScaleLabelTextPaint.TextSize,
+                null);
 
+            var lastTimeLabelPosX = Bounds.Width;
+            var timeLabelPosY = (float)(Bounds.Height - (_settings.MarginBottom) + 12);
+            var scaleYPosY = (float)(Bounds.Height - (_settings.MarginBottom + 5));
+            
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
                 if (segmentIndex >= visibleDataSpan.Length)
@@ -274,6 +284,20 @@ public partial class ChartControl : UserControl
                     hoveredPosTime = (currentSegmentPosX - _segmentWidth / 2, chartSegment.Bar.Time);
                 }
 
+                if ((chartSegment.PosX - chartSegment.Width) + timeLabelFormattedText.Width < lastTimeLabelPosX - 10)
+                {
+                    // canvas.DrawLine(new SKPoint(currentSegmentPosX, scaleYPosY),
+                    //     new SKPoint(currentSegmentPosX, scaleYPosY + 10),
+                    //     AppSettings.ScaleBorderPaint);
+                    
+                    canvas.DrawText(chartSegment.Bar.Time.ToString("yyyy-MM-dd"),
+                        (chartSegment.PosX - chartSegment.Width) ,
+                        timeLabelPosY,
+                        AppSettings.ScaleTextPaint);
+
+                    lastTimeLabelPosX = (chartSegment.PosX - chartSegment.Width);
+                }
+                
                 currentSegmentPosX -= _segmentWidth;
             }
 
