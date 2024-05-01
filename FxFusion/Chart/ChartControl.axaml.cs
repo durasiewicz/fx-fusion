@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia;
@@ -14,6 +15,7 @@ using FxFusion.Indicators;
 using FxFusion.Models;
 using ReactiveUI;
 using SkiaSharp;
+using Avalonia.Media;
 
 namespace FxFusion.Chart;
 
@@ -198,6 +200,14 @@ public partial class ChartControl : UserControl
             Color = SKColors.Black,
             Style = SKPaintStyle.Stroke
         };
+        
+        private readonly SKPaint _chartInfo = new()
+        {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke,
+            TextSize = 20
+        };
 
         private readonly SKPaint _bullCandlePaint = new()
         {
@@ -263,10 +273,20 @@ public partial class ChartControl : UserControl
 
             if (Data is null)
             {
-                canvas.DrawText("No data to display.",
-                    ((float)Bounds.Width / 2),
+                var text = "No data to display.";
+                var defaultTypeface = new Typeface(FontFamily.Default);
+                
+                var formattedText = new FormattedText(text,
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    defaultTypeface,
+                    _chartInfo.TextSize,
+                    null);
+                
+                canvas.DrawText(text,
+                    (float)(Bounds.Width / 2 - formattedText.Width / 2),
                     ((float)Bounds.Height / 2),
-                    _barPaint);
+                    _chartInfo);
 
                 return;
             }
