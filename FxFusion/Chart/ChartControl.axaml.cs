@@ -145,13 +145,13 @@ public partial class ChartControl : UserControl
             (o, v) => o.AvailableBarsCount = v,
             defaultBindingMode: BindingMode.TwoWay,
             enableDataValidation: true);
-    
+
     public IIndicator PriceIndicator
     {
         get => _priceIndicator;
         set => SetAndRaise(PriceIndicatorProperty, ref _priceIndicator, value);
     }
-    
+
     public static readonly DirectProperty<ChartControl, IIndicator> PriceIndicatorProperty =
         AvaloniaProperty.RegisterDirect<ChartControl, IIndicator>(
             nameof(AvailableBarsCount),
@@ -200,7 +200,7 @@ public partial class ChartControl : UserControl
             Color = SKColors.Black,
             Style = SKPaintStyle.Stroke
         };
-        
+
         private readonly SKPaint _chartInfo = new()
         {
             IsAntialias = true,
@@ -256,7 +256,7 @@ public partial class ChartControl : UserControl
         private readonly ChartSettings _settings = new();
 
         private IIndicator _priceIndicator = new CandlePriceIndicator();
-        
+
         public void Render(ImmediateDrawingContext context)
         {
             var leaseFeature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
@@ -275,14 +275,14 @@ public partial class ChartControl : UserControl
             {
                 var text = "No data to display.";
                 var defaultTypeface = new Typeface(FontFamily.Default);
-                
+
                 var formattedText = new FormattedText(text,
                     CultureInfo.CurrentCulture,
                     FlowDirection.LeftToRight,
                     defaultTypeface,
                     _chartInfo.TextSize,
                     null);
-                
+
                 canvas.DrawText(text,
                     (float)(Bounds.Width / 2 - formattedText.Width / 2),
                     ((float)Bounds.Height / 2),
@@ -300,7 +300,7 @@ public partial class ChartControl : UserControl
             var currentSegmentPosX = (float)Bounds.Width - _settings.MarginRight - 0.5f;
 
             (float, DateTime)? hoveredPosTime = null;
-            
+
             var chartFrame = new ChartFrame(canvas,
                 Bounds,
                 _settings,
@@ -317,9 +317,9 @@ public partial class ChartControl : UserControl
                 var chartSegment = new ChartSegment(visibleDataSpan[segmentIndex],
                     currentSegmentPosX,
                     _segmentWidth);
-                
+
                 _priceIndicator.Draw(chartFrame, chartSegment);
-                
+
                 if (IsPointerOverControl &&
                     PointerPosition.X <= currentSegmentPosX &&
                     PointerPosition.X >= currentSegmentPosX - _segmentWidth)
@@ -372,7 +372,7 @@ public partial class ChartControl : UserControl
 
                 return fraction * Math.Pow(10, exponent);
             }
-            
+
             (decimal min, decimal max) CalculateMinMaxPrice(ReadOnlySpan<Bar> dataSlice)
             {
                 var currentMin = decimal.MaxValue;
@@ -409,14 +409,27 @@ public partial class ChartControl : UserControl
                 {
                     var (posX, time) = hoveredPosTime.Value;
 
-                    canvas.DrawRect(new SKRect(posX - 60,
+                    var timeLabelText = time.ToString("yyyy-MM-dd");
+                    var defaultTypeface = new Typeface(FontFamily.Default);
+
+                    var formattedText = new FormattedText(timeLabelText,
+                        CultureInfo.CurrentCulture,
+                        FlowDirection.LeftToRight,
+                        defaultTypeface,
+                        _scaleLabelText.TextSize,
+                        null);
+
+                    var textHalfWidth = (float)(formattedText.Width / 2);
+                    var leftRightPadding = 10f;
+
+                    canvas.DrawRect(new SKRect(posX - textHalfWidth - leftRightPadding,
                             posY,
-                            posX + 60,
+                            posX + textHalfWidth + leftRightPadding,
                             (float)Bounds.Height),
                         _scalePaint);
 
-                    canvas.DrawText(time.ToString(),
-                        posX - 50,
+                    canvas.DrawText(timeLabelText,
+                        posX - textHalfWidth,
                         posY + 18,
                         _scaleLabelText);
                 }
