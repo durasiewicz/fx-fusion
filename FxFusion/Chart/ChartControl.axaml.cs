@@ -443,15 +443,21 @@ public partial class ChartControl : UserControl
                 var currentPrice = scaleYMax;
 
                 var scaleBorderX = (float)Bounds.Width - _settings.MarginRight + 5 + 0.5f;
+                var scaleBottomY = (float)(Bounds.Height - _settings.MarginBottom - 5);
 
                 canvas.DrawLine(new SKPoint(scaleBorderX, 0),
-                    new SKPoint(scaleBorderX, (float)Bounds.Height),
+                    new SKPoint(scaleBorderX, scaleBottomY),
                     _barPaint);
 
                 while (currentPrice >= scaleYMin)
                 {
                     var posY = chartFrame.PriceToPosY((decimal)currentPrice);
 
+                    if (posY >= scaleBottomY)
+                    {
+                        break;
+                    }
+                    
                     canvas.DrawLine(new SKPoint(scaleBorderX, posY),
                         new SKPoint(scaleBorderX + 5, posY),
                         _barPaint);
