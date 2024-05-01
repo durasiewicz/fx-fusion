@@ -15,7 +15,6 @@ using FxFusion.Indicators;
 using FxFusion.Models;
 using ReactiveUI;
 using SkiaSharp;
-using Avalonia.Media;
 
 namespace FxFusion.Chart;
 
@@ -193,59 +192,7 @@ public partial class ChartControl : UserControl
         public bool Equals(ICustomDrawOperation? other) => false;
 
         public bool IsCrosshairVisible { get; set; }
-
-        private readonly SKPaint _barPaint = new()
-        {
-            IsAntialias = true,
-            Color = SKColors.Black,
-            Style = SKPaintStyle.Stroke
-        };
-
-        private readonly SKPaint _chartInfo = new()
-        {
-            IsAntialias = true,
-            Color = SKColors.Black,
-            Style = SKPaintStyle.Stroke,
-            TextSize = 20
-        };
-
-        private readonly SKPaint _bullCandlePaint = new()
-        {
-            IsAntialias = true,
-            Color = SKColors.Green,
-            Style = SKPaintStyle.Fill
-        };
-
-        private readonly SKPaint _bearCandlePaint = new()
-        {
-            IsAntialias = true,
-            Color = SKColors.Crimson,
-            Style = SKPaintStyle.Fill
-        };
-
-        private readonly SKPaint _candleBodyBorder = new()
-        {
-            IsAntialias = true,
-            Color = SKColors.Black,
-            Style = SKPaintStyle.Stroke
-        };
-
-        private readonly SKPaint _scalePaint = new()
-        {
-            IsAntialias = true,
-            Color = SKColors.Black,
-            Style = SKPaintStyle.Fill,
-            FilterQuality = SKFilterQuality.High,
-        };
-
-        private readonly SKPaint _scaleLabelText = new()
-        {
-            IsAntialias = true,
-            Color = SKColors.White,
-            //Style = SKPaintStyle.Stroke,
-            FilterQuality = SKFilterQuality.High,
-        };
-
+        
         private int _segmentWidth = 50;
         private readonly int _zoomStep = 2;
 
@@ -280,13 +227,13 @@ public partial class ChartControl : UserControl
                     CultureInfo.CurrentCulture,
                     FlowDirection.LeftToRight,
                     defaultTypeface,
-                    _chartInfo.TextSize,
+                    AppSettings.ChartInfoPaint.TextSize,
                     null);
 
                 canvas.DrawText(text,
                     (float)(Bounds.Width / 2 - formattedText.Width / 2),
                     ((float)Bounds.Height / 2),
-                    _chartInfo);
+                    AppSettings.ChartInfoPaint);
 
                 return;
             }
@@ -334,14 +281,14 @@ public partial class ChartControl : UserControl
             {
                 canvas.DrawLine(new SKPoint(0, (float)PointerPosition.Y - 0.5f),
                     new SKPoint((float)Bounds.Width, (float)PointerPosition.Y - 0.5f),
-                    _barPaint);
+                    AppSettings.ScaleBorderPaint);
 
                 if (hoveredPosTime is not null)
                 {
                     var (posX, _) = hoveredPosTime.Value;
                     canvas.DrawLine(new SKPoint(posX, 0),
                         new SKPoint(posX, (float)Bounds.Height),
-                        _barPaint);
+                        AppSettings.ScaleBorderPaint);
                 }
             }
 
@@ -403,7 +350,7 @@ public partial class ChartControl : UserControl
 
                 canvas.DrawLine(new SKPoint(0, posY),
                     new SKPoint((float)Bounds.Width, posY),
-                    _barPaint);
+                    AppSettings.ScaleBorderPaint);
 
                 if (hoveredPosTime is not null && IsCrosshairVisible)
                 {
@@ -416,7 +363,7 @@ public partial class ChartControl : UserControl
                         CultureInfo.CurrentCulture,
                         FlowDirection.LeftToRight,
                         defaultTypeface,
-                        _scaleLabelText.TextSize,
+                        AppSettings.ScaleLabelTextPaint.TextSize,
                         null);
 
                     var textHalfWidth = (float)(formattedText.Width / 2);
@@ -426,12 +373,12 @@ public partial class ChartControl : UserControl
                             posY,
                             posX + textHalfWidth + leftRightPadding,
                             (float)Bounds.Height),
-                        _scalePaint);
+                        AppSettings.ScaleBorderPaint);
 
                     canvas.DrawText(timeLabelText,
                         posX - textHalfWidth,
                         posY + 18,
-                        _scaleLabelText);
+                        AppSettings.ScaleLabelTextPaint);
                 }
             }
 
@@ -447,7 +394,7 @@ public partial class ChartControl : UserControl
 
                 canvas.DrawLine(new SKPoint(scaleBorderX, 0),
                     new SKPoint(scaleBorderX, scaleBottomY),
-                    _barPaint);
+                    AppSettings.ScaleBorderPaint);
 
                 while (currentPrice >= scaleYMin)
                 {
@@ -460,12 +407,12 @@ public partial class ChartControl : UserControl
                     
                     canvas.DrawLine(new SKPoint(scaleBorderX, posY),
                         new SKPoint(scaleBorderX + 5, posY),
-                        _barPaint);
+                        AppSettings.ScaleBorderPaint);
 
                     canvas.DrawText(currentPrice.ToString("0.##"),
                         ((float)Bounds.Width - _settings.MarginRight + 15),
                         posY,
-                        _scalePaint);
+                        AppSettings.ScaleBorderPaint);
 
                     currentPrice -= scaleYStep;
                 }
@@ -475,12 +422,12 @@ public partial class ChartControl : UserControl
                     canvas.DrawRect(new SKRect(scaleBorderX,
                         (float)(PointerPosition.Y - 10.5f),
                         (float)Bounds.Width,
-                        (float)(PointerPosition.Y + 10.5f)), _scalePaint);
+                        (float)(PointerPosition.Y + 10.5f)),  AppSettings.ScaleBorderPaint);
 
                     canvas.DrawText(chartFrame.PosYToPrice(PointerPosition.Y).ToString("0.##"),
                         scaleBorderX + 10,
                         (float)PointerPosition.Y + 5,
-                        _scaleLabelText);
+                        AppSettings.ScaleLabelTextPaint);
                 }
             }
         }
