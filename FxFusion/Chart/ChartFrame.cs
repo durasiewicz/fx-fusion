@@ -22,8 +22,8 @@ public readonly record struct ChartFrame(
 
     public double PosYToPrice(double posY)
     {
-        var priceDataMinDiff = (ChartBounds.Height - Settings.MarginTop - posY) / PixelsPerPriceUnit();
-        return (double)MinPrice + priceDataMinDiff;
+        var yPosDiff = (float)(ChartBounds.Height - Settings.MarginTop - Settings.MarginBottom - posY) + (Settings.MarginTop >> 1);
+        return yPosDiff / PixelsPerPriceUnit() + (double)MinPrice;
     }
 
     private float PixelsPerPriceUnit()
