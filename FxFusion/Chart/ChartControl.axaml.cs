@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
@@ -13,6 +16,7 @@ using Avalonia.Threading;
 using FxFusion.Data;
 using FxFusion.Indicators;
 using FxFusion.Models;
+using FxFusion.Objects;
 using ReactiveUI;
 using SkiaSharp;
 
@@ -56,6 +60,11 @@ public partial class ChartControl : UserControl
                     _chartDrawOperation.ZoomOut();
                     break;
             }
+        };
+
+        PointerPressed += (sender, args) =>
+        {
+            var a = args;
         };
 
         ZoomInCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomIn);
@@ -163,6 +172,14 @@ public partial class ChartControl : UserControl
 
     private class ChartDrawOperation : ICustomDrawOperation
     {
+        public ChartDrawOperation()
+        {
+            _chartObjects.Add(new HorizontalLine()
+            {
+                Price = 57.72m
+            });
+        }
+        
         public void Dispose()
         {
         }
@@ -186,6 +203,7 @@ public partial class ChartControl : UserControl
         private Point PointerPosition { get; set; }
         private Bar[]? Data { get; set; }
         private int DataShift { get; set; }
+        private readonly List<IChartObject> _chartObjects = new();
 
         public Rect Bounds { get; private set; }
         public bool HitTest(Point p) => false;
@@ -251,7 +269,9 @@ public partial class ChartControl : UserControl
                 Bounds,
                 _settings,
                 minPrice,
-                maxPrice);
+                maxPrice,
+                visibleDataSpan.IsEmpty ? default : visibleDataSpan[^1].Time,
+                visibleDataSpan.IsEmpty ? default : visibleDataSpan[0].Time);
             
             var timeLabelFormattedText = new FormattedText(DateTime.Now.ToString("yyyy-MM-dd"),
                 CultureInfo.CurrentCulture,
@@ -300,6 +320,8 @@ public partial class ChartControl : UserControl
                 
                 currentSegmentPosX -= _segmentWidth;
             }
+            
+            _chartObjects.ForEach(q => q.Draw(in chartFrame));
 
             if (IsCrosshairVisible && IsPointerOverControl)
             {

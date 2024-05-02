@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
 using SkiaSharp;
 
 namespace FxFusion.Chart;
@@ -8,7 +9,9 @@ public readonly record struct ChartFrame(
     Rect ChartBounds,
     ChartSettings Settings,
     decimal MinPrice,
-    decimal MaxPrice)
+    decimal MaxPrice,
+    DateTime StartDateTime,
+    DateTime EndDateTime)
 {
     public float PriceToPosY(decimal price)
     {
