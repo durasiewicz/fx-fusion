@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
@@ -47,7 +45,9 @@ public partial class ChartControl : UserControl
             }
         };
 
-        PointerMoved += (sender, args) => _pointerPosition = args.GetPosition(this);
+        PointerMoved += (sender, args) =>
+            _chartDrawOperation.UpdatePointer(IsPointerOver ? args.GetPosition(this) : null);
+        
         PointerWheelChanged += (sender, args) =>
         {
             switch (args.Delta)
@@ -168,7 +168,6 @@ public partial class ChartControl : UserControl
             defaultBindingMode: BindingMode.TwoWay,
             enableDataValidation: true);
 
-    private Point _pointerPosition;
 
     private class ChartDrawOperation : ICustomDrawOperation
     {
@@ -179,7 +178,7 @@ public partial class ChartControl : UserControl
                 Price = 57.72m
             });
         }
-        
+
         public void Dispose()
         {
         }
@@ -187,20 +186,20 @@ public partial class ChartControl : UserControl
         public void BeginRender(Bar[]? data,
             int dataShift,
             Rect bounds,
-            Point pointerPosition,
-            bool isPointerOverControl,
             IIndicator priceIndicator)
         {
             Data = data;
             Bounds = bounds;
             DataShift = dataShift;
-            PointerPosition = pointerPosition;
-            IsPointerOverControl = isPointerOverControl;
             _priceIndicator = priceIndicator ?? new CandlePriceIndicator();
         }
 
-        private bool IsPointerOverControl { get; set; }
-        private Point PointerPosition { get; set; }
+        public void UpdatePointer(Point? pointerPosition)
+        {
+            _pointerPosition = pointerPosition;
+        }
+
+        private Point? _pointerPosition;
         private Bar[]? Data { get; set; }
         private int DataShift { get; set; }
         private readonly List<IChartObject> _chartObjects = new();
@@ -210,7 +209,7 @@ public partial class ChartControl : UserControl
         public bool Equals(ICustomDrawOperation? other) => false;
 
         public bool IsCrosshairVisible { get; set; }
-        
+
         private int _segmentWidth = 50;
         private readonly int _zoomStep = 2;
 
@@ -272,7 +271,7 @@ public partial class ChartControl : UserControl
                 maxPrice,
                 visibleDataSpan.IsEmpty ? default : visibleDataSpan[^1].Time,
                 visibleDataSpan.IsEmpty ? default : visibleDataSpan[0].Time);
-            
+
             var timeLabelFormattedText = new FormattedText(DateTime.Now.ToString("yyyy-MM-dd"),
                 CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
@@ -282,8 +281,7 @@ public partial class ChartControl : UserControl
 
             var lastTimeLabelPosX = Bounds.Width;
             var timeLabelPosY = (float)(Bounds.Height - (_settings.MarginBottom) + 12);
-            var scaleYPosY = (float)(Bounds.Height - (_settings.MarginBottom + 5));
-            
+
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
                 if (segmentIndex >= visibleDataSpan.Length)
@@ -297,9 +295,8 @@ public partial class ChartControl : UserControl
 
                 _priceIndicator.Draw(chartFrame, chartSegment);
 
-                if (IsPointerOverControl &&
-                    PointerPosition.X <= currentSegmentPosX &&
-                    PointerPosition.X >= currentSegmentPosX - _segmentWidth)
+                if (_pointerPosition?.X <= currentSegmentPosX &&
+                    _pointerPosition?.X >= currentSegmentPosX - _segmentWidth)
                 {
                     hoveredPosTime = (currentSegmentPosX - _segmentWidth / 2, chartSegment.Bar.Time);
                 }
@@ -309,24 +306,24 @@ public partial class ChartControl : UserControl
                     // canvas.DrawLine(new SKPoint(currentSegmentPosX, scaleYPosY),
                     //     new SKPoint(currentSegmentPosX, scaleYPosY + 10),
                     //     AppSettings.ScaleBorderPaint);
-                    
+
                     canvas.DrawText(chartSegment.Bar.Time.ToString("yyyy-MM-dd"),
-                        (chartSegment.PosX - chartSegment.Width) ,
+                        (chartSegment.PosX - chartSegment.Width),
                         timeLabelPosY,
                         AppSettings.ScaleTextPaint);
 
                     lastTimeLabelPosX = (chartSegment.PosX - chartSegment.Width);
                 }
-                
+
                 currentSegmentPosX -= _segmentWidth;
             }
-            
+
             _chartObjects.ForEach(q => q.Draw(in chartFrame));
 
-            if (IsCrosshairVisible && IsPointerOverControl)
+            if (_pointerPosition.HasValue)
             {
-                canvas.DrawLine(new SKPoint(0, (float)PointerPosition.Y - 0.5f),
-                    new SKPoint((float)Bounds.Width, (float)PointerPosition.Y - 0.5f),
+                canvas.DrawLine(new SKPoint(0, (float)_pointerPosition.Value.Y - 0.5f),
+                    new SKPoint((float)Bounds.Width, (float)_pointerPosition.Value.Y - 0.5f),
                     AppSettings.ScaleBorderPaint);
 
                 if (hoveredPosTime is not null)
@@ -450,7 +447,7 @@ public partial class ChartControl : UserControl
                     {
                         break;
                     }
-                    
+
                     canvas.DrawLine(new SKPoint(scaleBorderX, posY),
                         new SKPoint(scaleBorderX + 5, posY),
                         AppSettings.ScaleBorderPaint);
@@ -463,16 +460,16 @@ public partial class ChartControl : UserControl
                     currentPrice -= scaleYStep;
                 }
 
-                if (IsCrosshairVisible && IsPointerOverControl)
+                if (_pointerPosition.HasValue)
                 {
                     canvas.DrawRect(new SKRect(scaleBorderX,
-                        (float)(PointerPosition.Y - 10.5f),
+                        (float)(_pointerPosition.Value.Y - 10.5f),
                         (float)Bounds.Width,
-                        (float)(PointerPosition.Y + 10.5f)),  AppSettings.ScaleBorderPaint);
+                        (float)(_pointerPosition.Value.Y + 10.5f)), AppSettings.ScaleBorderPaint);
 
-                    canvas.DrawText(chartFrame.PosYToPrice(PointerPosition.Y).ToString("0.##"),
+                    canvas.DrawText(chartFrame.PosYToPrice(_pointerPosition.Value.Y).ToString("0.##"),
                         scaleBorderX + 10,
-                        (float)PointerPosition.Y + 5,
+                        (float)_pointerPosition.Value.Y + 5,
                         AppSettings.ScaleLabelTextPaint);
                 }
             }
@@ -483,11 +480,15 @@ public partial class ChartControl : UserControl
     {
         var dataShift = _data?.Length - BarsShift ?? 0;
 
+        if (!IsPointerOver)
+        {
+            // When pointer has moved outside control boundaries, but PointerMoved event not fired (?).
+            _chartDrawOperation.UpdatePointer(null);
+        }
+        
         _chartDrawOperation.BeginRender(_data,
             dataShift,
             new Rect(0, 0, Bounds.Width, Bounds.Height),
-            _pointerPosition,
-            IsPointerOver,
             _priceIndicator);
 
         context.Custom(_chartDrawOperation);
