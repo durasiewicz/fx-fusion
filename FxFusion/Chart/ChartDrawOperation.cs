@@ -177,7 +177,7 @@ public partial class ChartControl
             _chartObjects.ForEach(q => q.Draw(in chartFrame));
             
 
-            if (_pointerPosition.HasValue)
+            if (IsCrosshairVisible && _pointerPosition.HasValue)
             {
                 canvas.DrawLine(new SKPoint(0, (float)_pointerPosition.Value.Y - 0.5f),
                     new SKPoint((float)Bounds.Width, (float)_pointerPosition.Value.Y - 0.5f),
@@ -317,7 +317,7 @@ public partial class ChartControl
                     currentPrice -= scaleYStep;
                 }
 
-                if (_pointerPosition.HasValue)
+                if (IsCrosshairVisible && _pointerPosition.HasValue)
                 {
                     canvas.DrawRect(new SKRect(scaleBorderX,
                         (float)(_pointerPosition.Value.Y - 10.5f),
