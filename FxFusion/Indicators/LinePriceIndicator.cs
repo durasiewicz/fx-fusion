@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using FxFusion.Chart;
+﻿using FxFusion.Chart;
 using SkiaSharp;
 
 namespace FxFusion.Indicators;
@@ -27,7 +26,7 @@ public class LinePriceIndicator : IIndicator
         var nextPrice = chartFrame.PriceToPosY(nextSegment.Bar.Close);
         
         chartFrame.Canvas.DrawLine(
-            new SKPoint(currentSegment.PosX, currentPrice),
-            new SKPoint(nextSegment.PosX, nextPrice), _linePaint);
+            new SKPoint(currentSegment.Middle, currentPrice),
+            new SKPoint(nextSegment.Middle, nextPrice), _linePaint);
     }
 }

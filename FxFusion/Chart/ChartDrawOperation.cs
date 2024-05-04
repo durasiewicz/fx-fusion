@@ -131,8 +131,8 @@ public partial class ChartControl
                 }
 
                 var chartSegment = new ChartSegment(visibleDataSpan[segmentIndex],
-                    currentSegmentPosX,
-                    _segmentWidth);
+                    currentSegmentPosX - _segmentWidth,
+                    currentSegmentPosX);
                 
                 _visibleChartSegments.Add(chartSegment);
 
@@ -159,18 +159,18 @@ public partial class ChartControl
                 var chartSegment = _visibleChartSegments[segmentIndex];
                 _priceIndicator.Draw(chartFrame, segmentIndex);
                 
-                if ((chartSegment.PosX - chartSegment.Width) + timeLabelFormattedText.Width < lastTimeLabelPosX - 10)
+                if (chartSegment.LeftBorderPosX + timeLabelFormattedText.Width < lastTimeLabelPosX - 10)
                 {
                     // canvas.DrawLine(new SKPoint(currentSegmentPosX, scaleYPosY),
                     //     new SKPoint(currentSegmentPosX, scaleYPosY + 10),
                     //     AppSettings.ScaleBorderPaint);
                 
                     canvas.DrawText(chartSegment.Bar.Time.ToString("yyyy-MM-dd"),
-                        (chartSegment.PosX - chartSegment.Width),
+                        chartSegment.LeftBorderPosX,
                         timeLabelPosY,
                         AppSettings.ScaleTextPaint);
                 
-                    lastTimeLabelPosX = (chartSegment.PosX - chartSegment.Width);
+                    lastTimeLabelPosX = chartSegment.LeftBorderPosX;
                 }
             }
                 

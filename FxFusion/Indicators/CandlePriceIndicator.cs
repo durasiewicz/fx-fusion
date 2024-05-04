@@ -37,19 +37,17 @@ public class CandlePriceIndicator : IIndicator
     public void Draw(in ChartFrame chartFrame, int segmentIndex)
     {
         var chartSegment = chartFrame.Segments[segmentIndex];
-        var segmentMiddle = chartSegment.PosX - (chartSegment.Width / 2);
-
         var barHighY = chartFrame.PriceToPosY(chartSegment.Bar.High);
         var barLowY = chartFrame.PriceToPosY(chartSegment.Bar.Low);
         var segmentMargin = chartSegment.Width * 0.1;
         
-        chartFrame.Canvas.DrawLine(new SKPoint(segmentMiddle, barHighY),
-            new SKPoint(segmentMiddle, barLowY),
+        chartFrame.Canvas.DrawLine(new SKPoint(chartSegment.Middle, barHighY),
+            new SKPoint(chartSegment.Middle, barLowY),
             _barPaint);
 
-        var bodyRect = new SKRect((float)(chartSegment.PosX - chartSegment.Width + segmentMargin),
+        var bodyRect = new SKRect((float)(chartSegment.LeftBorderPosX + segmentMargin),
             chartFrame.PriceToPosY(Math.Max(chartSegment.Bar.Open, chartSegment.Bar.Close)),
-            (float)(chartSegment.PosX - segmentMargin),
+            (float)(chartSegment.RightBorderPosX - segmentMargin),
             chartFrame.PriceToPosY(Math.Min(chartSegment.Bar.Open, chartSegment.Bar.Close)));
 
         chartFrame.Canvas.DrawRect(bodyRect, chartSegment.Bar.Open > chartSegment.Bar.Close ? _bearCandlePaint : _bullCandlePaint);
