@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Avalonia;
 using SkiaSharp;
 
@@ -11,7 +12,8 @@ public readonly record struct ChartFrame(
     decimal MinPrice,
     decimal MaxPrice,
     DateTime StartDateTime,
-    DateTime EndDateTime)
+    DateTime EndDateTime,
+    IReadOnlyList<ChartSegment> Segments)
 {
     public float PriceToPosY(decimal price)
     {

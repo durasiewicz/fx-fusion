@@ -34,8 +34,9 @@ public class CandlePriceIndicator : IIndicator
         Style = SKPaintStyle.Stroke
     };
     
-    public void Draw(in ChartFrame chartFrame, in ChartSegment chartSegment)
+    public void Draw(in ChartFrame chartFrame, int segmentIndex)
     {
+        var chartSegment = chartFrame.Segments[segmentIndex];
         var segmentMiddle = chartSegment.PosX - (chartSegment.Width / 2);
 
         var barHighY = chartFrame.PriceToPosY(chartSegment.Bar.High);

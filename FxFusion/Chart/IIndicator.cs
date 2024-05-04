@@ -2,5 +2,5 @@
 
 public interface IIndicator
 {
-    void Draw(in ChartFrame chartFrame, in ChartSegment chartSegment);
+    void Draw(in ChartFrame chartFrame, int segmentIndex);
 }

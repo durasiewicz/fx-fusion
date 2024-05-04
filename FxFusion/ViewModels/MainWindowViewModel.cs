@@ -13,15 +13,18 @@ public class MainWindowViewModel : ViewModelBase
 
     private void ShowCandles() => PriceIndicator = new CandlePriceIndicator();
     private void ShowBars() => PriceIndicator = new BarPriceIndicator();
+    private void ShowLine() => PriceIndicator = new LinePriceIndicator();
     
     public MainWindowViewModel()
     {
         ShowAsCandles = ReactiveCommand.Create(ShowCandles);
         ShowAsBars = ReactiveCommand.Create(ShowBars);
+        ShowAsLine = ReactiveCommand.Create(ShowLine);
     }
     
     public ReactiveCommand<Unit, Unit> ShowAsCandles { get; }
     public ReactiveCommand<Unit, Unit> ShowAsBars { get; }
+    public ReactiveCommand<Unit, Unit> ShowAsLine { get; }
     
     private IIndicator _priceIndicator = new CandlePriceIndicator();
     

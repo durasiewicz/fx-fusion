@@ -17,7 +17,7 @@
     </Design.DataContext>
 
     <Grid RowDefinitions="33,*,Auto">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto">
             <Button Grid.Column="0" Command="{Binding #Chart.ZoomInCommand}">+</Button>
             <Button Grid.Column="1" Command="{Binding #Chart.ZoomOutCommand}">-</Button>
             <ComboBox Grid.Column="2" 
@@ -29,6 +29,7 @@
             <CheckBox Grid.Column="4" IsChecked="{Binding #Chart.IsCrosshairVisible}">Crosshair</CheckBox>
             <Button Grid.Column="5" Command="{Binding ShowAsCandles}">Candle</Button>
             <Button Grid.Column="6" Command="{Binding ShowAsBars}">Bar</Button>
+            <Button Grid.Column="7" Command="{Binding ShowAsLine}">Line</Button>
         </Grid>
         <chart:ChartControl 
             Name="Chart"

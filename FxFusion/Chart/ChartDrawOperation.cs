@@ -66,6 +66,7 @@ public partial class ChartControl
         private readonly ChartSettings _settings = new();
 
         private IIndicator _priceIndicator = new CandlePriceIndicator();
+        private readonly List<ChartSegment> _visibleChartSegments = new List<ChartSegment>();
 
         public void Render(ImmediateDrawingContext context)
         {
@@ -109,15 +110,7 @@ public partial class ChartControl
             var currentSegmentPosX = (float)Bounds.Width - _settings.MarginRight - 0.5f;
 
             (float, DateTime)? hoveredPosTime = null;
-
-            var chartFrame = new ChartFrame(canvas,
-                Bounds,
-                _settings,
-                minPrice,
-                maxPrice,
-                visibleDataSpan.IsEmpty ? default : visibleDataSpan[^1].Time,
-                visibleDataSpan.IsEmpty ? default : visibleDataSpan[0].Time);
-
+            
             var timeLabelFormattedText = new FormattedText(DateTime.Now.ToString("yyyy-MM-dd"),
                 CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
@@ -128,6 +121,8 @@ public partial class ChartControl
             var lastTimeLabelPosX = Bounds.Width;
             var timeLabelPosY = (float)(Bounds.Height - (_settings.MarginBottom) + 12);
 
+            _visibleChartSegments.Clear();
+            
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
                 if (segmentIndex >= visibleDataSpan.Length)
@@ -138,8 +133,8 @@ public partial class ChartControl
                 var chartSegment = new ChartSegment(visibleDataSpan[segmentIndex],
                     currentSegmentPosX,
                     _segmentWidth);
-
-                _priceIndicator.Draw(chartFrame, chartSegment);
+                
+                _visibleChartSegments.Add(chartSegment);
 
                 if (_pointerPosition?.X <= currentSegmentPosX &&
                     _pointerPosition?.X >= currentSegmentPosX - _segmentWidth)
@@ -147,24 +142,40 @@ public partial class ChartControl
                     hoveredPosTime = (currentSegmentPosX - _segmentWidth / 2, chartSegment.Bar.Time);
                 }
 
+                currentSegmentPosX -= _segmentWidth;
+            }
+            
+            var chartFrame = new ChartFrame(canvas,
+                Bounds,
+                _settings,
+                minPrice,
+                maxPrice,
+                visibleDataSpan.IsEmpty ? default : visibleDataSpan[^1].Time,
+                visibleDataSpan.IsEmpty ? default : visibleDataSpan[0].Time,
+                _visibleChartSegments);
+
+            for (int segmentIndex = 0; segmentIndex < _visibleChartSegments.Count; segmentIndex++)
+            {
+                var chartSegment = _visibleChartSegments[segmentIndex];
+                _priceIndicator.Draw(chartFrame, segmentIndex);
+                
                 if ((chartSegment.PosX - chartSegment.Width) + timeLabelFormattedText.Width < lastTimeLabelPosX - 10)
                 {
                     // canvas.DrawLine(new SKPoint(currentSegmentPosX, scaleYPosY),
                     //     new SKPoint(currentSegmentPosX, scaleYPosY + 10),
                     //     AppSettings.ScaleBorderPaint);
-
+                
                     canvas.DrawText(chartSegment.Bar.Time.ToString("yyyy-MM-dd"),
                         (chartSegment.PosX - chartSegment.Width),
                         timeLabelPosY,
                         AppSettings.ScaleTextPaint);
-
+                
                     lastTimeLabelPosX = (chartSegment.PosX - chartSegment.Width);
                 }
-
-                currentSegmentPosX -= _segmentWidth;
             }
-
+                
             _chartObjects.ForEach(q => q.Draw(in chartFrame));
+            
 
             if (_pointerPosition.HasValue)
             {
