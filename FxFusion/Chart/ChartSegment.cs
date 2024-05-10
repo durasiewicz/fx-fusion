@@ -3,7 +3,7 @@ using FxFusion.Models;
 
 namespace FxFusion.Chart;
 
-public record struct ChartSegment(
+public readonly record struct ChartSegment(
     Bar Bar,
     float LeftBorderPosX,
     float RightBorderPosX)

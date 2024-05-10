@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
@@ -61,12 +62,14 @@ public partial class ChartControl
 
         public void ZoomIn() => _segmentWidth = Math.Min(80, _segmentWidth + _zoomStep);
         public void ZoomOut() => _segmentWidth = Math.Max(2, _segmentWidth - _zoomStep);
-
-
+        
         private readonly ChartSettings _settings = new();
 
         private IIndicator _priceIndicator = new CandlePriceIndicator();
         private readonly List<ChartSegment> _visibleChartSegments = new List<ChartSegment>();
+
+        private IChartObject? _hoveredObject;
+        private IChartObject? _selectedObject;
 
         public void Render(ImmediateDrawingContext context)
         {
@@ -194,6 +197,23 @@ public partial class ChartControl
 
             DrawYScale();
             DrawXScale();
+
+            _hoveredObject = null;
+            
+            if (_pointerPosition.HasValue)
+            {
+                foreach (var chartObject in _chartObjects)
+                {
+                    if (!chartObject.Hover(chartFrame, _pointerPosition.Value))
+                    {
+                        continue;
+                    }
+                    
+                    _hoveredObject = chartObject;
+                    
+                    break;
+                }
+            }
 
             canvas.Restore();
 
@@ -329,6 +349,31 @@ public partial class ChartControl
                         (float)_pointerPosition.Value.Y + 5,
                         AppSettings.ScaleLabelTextPaint);
                 }
+            }
+        }
+
+        public void KeyDown(KeyEventArgs args)
+        {
+            if (args.Key == Key.Back)
+            {
+                if (_selectedObject is not null)
+                {
+                    _chartObjects.Remove(_selectedObject);
+                }
+            }
+        }
+
+        public void PointerPressed(PointerPressedEventArgs args)
+        {
+            if (_hoveredObject is not null)
+            {
+                _hoveredObject.Select();
+                _selectedObject = _hoveredObject;
+            }
+            else
+            {
+                _selectedObject?.Unselect();
+                _selectedObject = null;
             }
         }
     }

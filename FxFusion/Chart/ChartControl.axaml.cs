@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using FxFusion.Data;
@@ -54,13 +55,14 @@ public partial class ChartControl : UserControl
         };
 
         PointerPressed += (sender, args) =>
-        {
-            var a = args;
-        };
+            _chartDrawOperation.PointerPressed(args);
 
         ZoomInCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomIn);
         ZoomOutCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomOut);
+        KeyDownCommand = ReactiveCommand.Create<KeyEventArgs>(HandleKeyDown);
     }
+
+    private void HandleKeyDown(KeyEventArgs args) => _chartDrawOperation.KeyDown(args);
 
     private async Task LoadData()
     {
@@ -117,6 +119,8 @@ public partial class ChartControl : UserControl
             defaultBindingMode: BindingMode.TwoWay,
             enableDataValidation: true);
 
+    public ReactiveCommand<KeyEventArgs, Unit> KeyDownCommand { get; }
+    
     public int BarsShift
     {
         get => _barsShift;

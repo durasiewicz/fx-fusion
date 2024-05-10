@@ -4,11 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:chart="clr-namespace:FxFusion.Chart"
+        xmlns:i="using:Avalonia.Xaml.Interactivity"
+        xmlns:local="clr-namespace:FxFusion.Behaviors"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="FxFusion.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="FxFusion">
+    
+    <i:Interaction.Behaviors>
+        <local:KeyDownBehavior Command="{Binding #Chart.KeyDownCommand}"/>
+    </i:Interaction.Behaviors>
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
