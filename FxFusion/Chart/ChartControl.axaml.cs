@@ -27,7 +27,8 @@ public partial class ChartControl : UserControl
     {
         InitializeComponent();
         ClipToBounds = true;
-        _chartDrawOperation = new ChartDrawOperation();
+        _chartObjectManager = new ChartObjectManager();
+        _chartDrawOperation = new ChartDrawOperation(_chartObjectManager);
 
         PropertyChanged += async (sender, args) =>
         {
@@ -38,8 +39,13 @@ public partial class ChartControl : UserControl
         };
 
         PointerMoved += (sender, args) =>
-            _chartDrawOperation.UpdatePointer(IsPointerOver ? args.GetPosition(this) : null);
-        
+        {
+            var pointerPosition = IsPointerOver ? args.GetPosition(this) : (Point?)null;
+            
+            _chartObjectManager.UpdatePointer(pointerPosition);
+            _chartDrawOperation.UpdatePointer(pointerPosition);
+        };
+
         PointerWheelChanged += (sender, args) =>
         {
             switch (args.Delta)
@@ -55,14 +61,27 @@ public partial class ChartControl : UserControl
         };
 
         PointerPressed += (sender, args) =>
-            _chartDrawOperation.PointerPressed(args);
+        {
+            var pointerPosition = args.GetPosition(this);
+            
+            if (ChartMode == ChartMode.AddHorizontalLine)
+            {
+                _chartObjectManager.CreateHorizontalLine(pointerPosition);
+                
+                ChartMode = ChartMode.Default;
+            }
+            else
+            {
+                _chartObjectManager.PointerPressed(pointerPosition);
+            }
+        };
 
         ZoomInCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomIn);
         ZoomOutCommand = ReactiveCommand.Create(_chartDrawOperation.ZoomOut);
         KeyDownCommand = ReactiveCommand.Create<KeyEventArgs>(HandleKeyDown);
     }
 
-    private void HandleKeyDown(KeyEventArgs args) => _chartDrawOperation.KeyDown(args);
+    private void HandleKeyDown(KeyEventArgs args) => _chartObjectManager.KeyDown(args);
 
     private async Task LoadData()
     {
@@ -163,6 +182,23 @@ public partial class ChartControl : UserControl
             defaultBindingMode: BindingMode.TwoWay,
             enableDataValidation: true);
 
+    private ChartMode _chartMode;
+    
+    public ChartMode ChartMode
+    {
+        get => _chartMode;
+        set => SetAndRaise(ChartModeProperty, ref _chartMode, value);
+    }
+    
+    public static readonly DirectProperty<ChartControl, ChartMode> ChartModeProperty =
+        AvaloniaProperty.RegisterDirect<ChartControl, ChartMode>(
+            nameof(AvailableBarsCount),
+            o => o.ChartMode,
+            (o, v) => o.ChartMode = v,
+            defaultBindingMode: BindingMode.TwoWay,
+            enableDataValidation: true);
+
+    private readonly ChartObjectManager _chartObjectManager;
 
     public override void Render(DrawingContext context)
     {

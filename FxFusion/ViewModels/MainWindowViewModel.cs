@@ -14,17 +14,20 @@ public class MainWindowViewModel : ViewModelBase
     private void ShowCandles() => PriceIndicator = new CandlePriceIndicator();
     private void ShowBars() => PriceIndicator = new BarPriceIndicator();
     private void ShowLine() => PriceIndicator = new LinePriceIndicator();
+    private void AddHorizontalLine() => ChartMode = ChartMode.AddHorizontalLine;
     
     public MainWindowViewModel()
     {
-        ShowAsCandles = ReactiveCommand.Create(ShowCandles);
-        ShowAsBars = ReactiveCommand.Create(ShowBars);
-        ShowAsLine = ReactiveCommand.Create(ShowLine);
+        ShowAsCandlesCommand = ReactiveCommand.Create(ShowCandles);
+        ShowAsBarsCommand = ReactiveCommand.Create(ShowBars);
+        ShowAsLineCommand = ReactiveCommand.Create(ShowLine);
+        AddHorizontalLineCommand = ReactiveCommand.Create(AddHorizontalLine);
     }
     
-    public ReactiveCommand<Unit, Unit> ShowAsCandles { get; }
-    public ReactiveCommand<Unit, Unit> ShowAsBars { get; }
-    public ReactiveCommand<Unit, Unit> ShowAsLine { get; }
+    public ReactiveCommand<Unit, Unit> ShowAsCandlesCommand { get; }
+    public ReactiveCommand<Unit, Unit> ShowAsBarsCommand { get; }
+    public ReactiveCommand<Unit, Unit> ShowAsLineCommand { get; }
+    public ReactiveCommand<Unit, Unit> AddHorizontalLineCommand { get; }
     
     private IIndicator _priceIndicator = new CandlePriceIndicator();
     
@@ -32,6 +35,14 @@ public class MainWindowViewModel : ViewModelBase
     {
         get => _priceIndicator;
         set => this.RaiseAndSetIfChanged(ref _priceIndicator, value);
+    }
+
+    private ChartMode _chartMode;
+    
+    public ChartMode ChartMode
+    {
+        get => _chartMode;
+        set => this.RaiseAndSetIfChanged(ref _chartMode, value);
     }
 
     private int _barShift;

@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
-using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using FxFusion.Indicators;
 using FxFusion.Models;
-using FxFusion.Objects;
 using SkiaSharp;
 
 namespace FxFusion.Chart;
@@ -18,12 +16,11 @@ public partial class ChartControl
 {
     private class ChartDrawOperation : ICustomDrawOperation
     {
-        public ChartDrawOperation()
+        public event Action<ChartMode> ChartModeChanged; 
+        
+        public ChartDrawOperation(ChartObjectManager chartObjectManager)
         {
-            _chartObjects.Add(new HorizontalLine()
-            {
-                Price = 57.72m
-            });
+            _chartObjectManager = chartObjectManager;
         }
 
         public void Dispose()
@@ -49,13 +46,13 @@ public partial class ChartControl
         private Point? _pointerPosition;
         private Bar[]? Data { get; set; }
         private int DataShift { get; set; }
-        private readonly List<IChartObject> _chartObjects = new();
 
         public Rect Bounds { get; private set; }
         public bool HitTest(Point p) => false;
         public bool Equals(ICustomDrawOperation? other) => false;
 
         public bool IsCrosshairVisible { get; set; }
+        public ChartMode ChartMode { get; set; }
 
         private int _segmentWidth = 50;
         private readonly int _zoomStep = 2;
@@ -67,9 +64,7 @@ public partial class ChartControl
 
         private IIndicator _priceIndicator = new CandlePriceIndicator();
         private readonly List<ChartSegment> _visibleChartSegments = new List<ChartSegment>();
-
-        private IChartObject? _hoveredObject;
-        private IChartObject? _selectedObject;
+        private readonly ChartObjectManager _chartObjectManager;
 
         public void Render(ImmediateDrawingContext context)
         {
@@ -176,9 +171,6 @@ public partial class ChartControl
                     lastTimeLabelPosX = chartSegment.LeftBorderPosX;
                 }
             }
-                
-            _chartObjects.ForEach(q => q.Draw(in chartFrame));
-            
 
             if (IsCrosshairVisible && _pointerPosition.HasValue)
             {
@@ -198,22 +190,7 @@ public partial class ChartControl
             DrawYScale();
             DrawXScale();
 
-            _hoveredObject = null;
-            
-            if (_pointerPosition.HasValue)
-            {
-                foreach (var chartObject in _chartObjects)
-                {
-                    if (!chartObject.Hover(chartFrame, _pointerPosition.Value))
-                    {
-                        continue;
-                    }
-                    
-                    _hoveredObject = chartObject;
-                    
-                    break;
-                }
-            }
+            _chartObjectManager.Update(chartFrame);
 
             canvas.Restore();
 
@@ -349,31 +326,6 @@ public partial class ChartControl
                         (float)_pointerPosition.Value.Y + 5,
                         AppSettings.ScaleLabelTextPaint);
                 }
-            }
-        }
-
-        public void KeyDown(KeyEventArgs args)
-        {
-            if (args.Key == Key.Back)
-            {
-                if (_selectedObject is not null)
-                {
-                    _chartObjects.Remove(_selectedObject);
-                }
-            }
-        }
-
-        public void PointerPressed(PointerPressedEventArgs args)
-        {
-            if (_hoveredObject is not null)
-            {
-                _hoveredObject.Select();
-                _selectedObject = _hoveredObject;
-            }
-            else
-            {
-                _selectedObject?.Unselect();
-                _selectedObject = null;
             }
         }
     }
