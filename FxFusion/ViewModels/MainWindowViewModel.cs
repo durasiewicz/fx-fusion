@@ -15,6 +15,7 @@ public class MainWindowViewModel : ViewModelBase
     private void ShowBars() => PriceIndicator = new BarPriceIndicator();
     private void ShowLine() => PriceIndicator = new LinePriceIndicator();
     private void AddHorizontalLine() => ChartMode = ChartMode.AddHorizontalLine;
+    private void AddHorizontalRay() => ChartMode = ChartMode.AddHorizontalRay;
     
     public MainWindowViewModel()
     {
@@ -22,12 +23,14 @@ public class MainWindowViewModel : ViewModelBase
         ShowAsBarsCommand = ReactiveCommand.Create(ShowBars);
         ShowAsLineCommand = ReactiveCommand.Create(ShowLine);
         AddHorizontalLineCommand = ReactiveCommand.Create(AddHorizontalLine);
+        AddHorizontalRayCommand = ReactiveCommand.Create(AddHorizontalRay);
     }
     
     public ReactiveCommand<Unit, Unit> ShowAsCandlesCommand { get; }
     public ReactiveCommand<Unit, Unit> ShowAsBarsCommand { get; }
     public ReactiveCommand<Unit, Unit> ShowAsLineCommand { get; }
     public ReactiveCommand<Unit, Unit> AddHorizontalLineCommand { get; }
+    public ReactiveCommand<Unit, Unit> AddHorizontalRayCommand { get; }
     
     private IIndicator _priceIndicator = new CandlePriceIndicator();
     

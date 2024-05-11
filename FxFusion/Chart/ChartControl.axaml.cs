@@ -63,16 +63,24 @@ public partial class ChartControl : UserControl
         PointerPressed += (sender, args) =>
         {
             var pointerPosition = args.GetPosition(this);
-            
-            if (ChartMode == ChartMode.AddHorizontalLine)
+
+            switch (ChartMode)
             {
-                _chartObjectManager.CreateHorizontalLine(pointerPosition);
+                case ChartMode.AddHorizontalLine:
+                    _chartObjectManager.CreateHorizontalLine(pointerPosition);
                 
-                ChartMode = ChartMode.Default;
-            }
-            else
-            {
-                _chartObjectManager.PointerPressed(pointerPosition);
+                    ChartMode = ChartMode.Default;
+                    break;
+                
+                case ChartMode.AddHorizontalRay:
+                    _chartObjectManager.CreateHorizontalRay(pointerPosition);
+                    
+                    ChartMode = ChartMode.Default;
+                    break;
+                
+                default:
+                    _chartObjectManager.PointerPressed(pointerPosition);
+                    break;
             }
         };
 

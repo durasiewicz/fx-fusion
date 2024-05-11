@@ -14,6 +14,8 @@ public class ChartObjectManager
     private record DeleteObjectCommand(IChartObject ChartObject) : Command;
 
     private record AddHorizontalLineCommand(Point Position) : Command;
+
+    private record AddHorizontalRayCommand(Point Position) : Command;
     
     private readonly ConcurrentQueue<Command> _commands = new();
     private readonly List<IChartObject> _chartObjects = new();
@@ -21,11 +23,9 @@ public class ChartObjectManager
     private IChartObject? _hoveredObject;
     private IChartObject? _selectedObject;
 
-    public void CreateHorizontalLine(Point position)
-    {
-        _commands.Enqueue(new AddHorizontalLineCommand(position));
-    }
-
+    public void CreateHorizontalLine(Point position) => _commands.Enqueue(new AddHorizontalLineCommand(position));
+    public void CreateHorizontalRay(Point position) => _commands.Enqueue(new AddHorizontalRayCommand(position));
+    
     public void UpdatePointer(Point? pointerPosition)
     {
         _pointerPosition = pointerPosition;
@@ -39,7 +39,9 @@ public class ChartObjectManager
 
         foreach (var chartObject in _chartObjects)
         {
-            if (_pointerPosition.HasValue && chartObject.Hover(chartFrame, _pointerPosition.Value))
+            if (_pointerPosition.HasValue && 
+                chartFrame.HoveredSegment.HasValue &&
+                chartObject.Hover(chartFrame, _pointerPosition.Value, chartFrame.HoveredSegment.Value.Bar.Time))
             {
                 _hoveredObject = chartObject;
             }
@@ -59,6 +61,23 @@ public class ChartObjectManager
                     {
                         Price = (decimal)chartFrame.PosYToPrice(addHorizontalLineCommand.Position.Y)
                     });
+                    break;
+                
+                case AddHorizontalRayCommand addHorizontalRayCommand:
+                    var segment = chartFrame.FindSegment(addHorizontalRayCommand.Position);
+
+                    if (!segment.HasValue)
+                    {
+                        throw new InvalidOperationException(
+                            $"Can't find segment for position {addHorizontalRayCommand.Position.ToString()}");
+                    }
+                    
+                    _chartObjects.Add(new HorizontalRay()
+                    {
+                        Price = (decimal)chartFrame.PosYToPrice(addHorizontalRayCommand.Position.Y),
+                        Time = segment.Value.Bar.Time
+                    });
+                    
                     break;
                 
                 case DeleteObjectCommand deleteObjectCommand:

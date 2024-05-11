@@ -120,6 +120,8 @@ public partial class ChartControl
             var timeLabelPosY = (float)(Bounds.Height - (_settings.MarginBottom) + 12);
 
             _visibleChartSegments.Clear();
+
+            ChartSegment? hoveredSegment = null;
             
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
@@ -138,6 +140,7 @@ public partial class ChartControl
                     _pointerPosition?.X >= currentSegmentPosX - _segmentWidth)
                 {
                     hoveredPosTime = (currentSegmentPosX - _segmentWidth / 2, chartSegment.Bar.Time);
+                    hoveredSegment = chartSegment;
                 }
 
                 currentSegmentPosX -= _segmentWidth;
@@ -150,7 +153,8 @@ public partial class ChartControl
                 maxPrice,
                 visibleDataSpan.IsEmpty ? default : visibleDataSpan[^1].Time,
                 visibleDataSpan.IsEmpty ? default : visibleDataSpan[0].Time,
-                _visibleChartSegments);
+                _visibleChartSegments,
+                hoveredSegment);
 
             for (int segmentIndex = 0; segmentIndex < _visibleChartSegments.Count; segmentIndex++)
             {

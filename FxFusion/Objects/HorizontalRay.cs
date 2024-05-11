@@ -1,30 +1,32 @@
-﻿using System;
+using System;
+using System.Linq;
 using Avalonia;
 using FxFusion.Chart;
 using SkiaSharp;
 
 namespace FxFusion.Objects;
 
-public class HorizontalLine : IChartObject
+public class HorizontalRay : IChartObject
 {
     private bool _isHover;
     private bool _isSelected;
     private const double HoverPrecision = 5;
     
     public decimal Price { get; set; }
+    public DateTime Time { get; set; }
     
     public bool Hover(ChartFrame chartFrame, Point point, DateTime time)
     {
         _isHover = false;
         
-        if (chartFrame.MinPrice > Price || chartFrame.MaxPrice < Price)
+        if (time < Time || chartFrame.MinPrice > Price || chartFrame.MaxPrice < Price)
         {
             return false;
         }
 
         var linePointY = chartFrame.PriceToPosY(Price);
 
-        if (point.Y >= linePointY - HoverPrecision && point.Y <= linePointY + HoverPrecision)
+        if (point.Y >= linePointY - HoverPrecision && point.Y <= linePointY + HoverPrecision && Time <= time)
         {
             _isHover = true;
             return true;
@@ -32,7 +34,7 @@ public class HorizontalLine : IChartObject
         
         return false;
     }
-    
+
     public void Select()
     {
         _isSelected = true;
@@ -54,29 +56,34 @@ public class HorizontalLine : IChartObject
         Color = SKColors.White,
         StrokeWidth = 3
     };
-    
+
     public void Draw(in ChartFrame chartFrame)
     {
-        if (chartFrame.MinPrice > Price || chartFrame.MaxPrice < Price)
+        var segment = chartFrame.Segments
+            .Where(q => q.Bar.Time == Time)
+            .Select(q => (ChartSegment?)q)
+            .SingleOrDefault();
+
+        if (!segment.HasValue)
         {
             return;
         }
         
         var posY = chartFrame.PriceToPosY(Price);
         chartFrame.Canvas.DrawLine(
-            new SKPoint((float)chartFrame.ChartBounds.Left, posY),
+            new SKPoint(segment.Value.Middle, posY),
             new SKPoint((float)chartFrame.ChartBounds.Right - chartFrame.Settings.MarginRight, posY), _paint);
 
         if (_isHover || _isSelected)
         {
-            chartFrame.Canvas.DrawCircle((float)(chartFrame.ChartBounds.Right - chartFrame.Settings.MarginRight) / 2,
+            chartFrame.Canvas.DrawCircle(segment.Value.Middle,
                 posY,
                 6,
                 _paint);
 
             if (_isSelected)
             {
-                chartFrame.Canvas.DrawCircle((float)(chartFrame.ChartBounds.Right - chartFrame.Settings.MarginRight) / 2,
+                chartFrame.Canvas.DrawCircle(segment.Value.Middle,
                     posY,
                     4,
                     _selectedPaint);

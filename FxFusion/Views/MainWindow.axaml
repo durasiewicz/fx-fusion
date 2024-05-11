@@ -23,7 +23,7 @@
     </Design.DataContext>
 
     <Grid RowDefinitions="33,*,Auto">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto">
             <Button Grid.Column="0" Command="{Binding #Chart.ZoomInCommand}">+</Button>
             <Button Grid.Column="1" Command="{Binding #Chart.ZoomOutCommand}">-</Button>
             <ComboBox Grid.Column="2" 
@@ -37,6 +37,7 @@
             <Button Grid.Column="6" Command="{Binding ShowAsBarsCommand}">Bar</Button>
             <Button Grid.Column="7" Command="{Binding ShowAsLineCommand}">Line</Button>
             <Button Grid.Column="8" Command="{Binding AddHorizontalLineCommand}">+ HLine</Button>
+            <Button Grid.Column="9" Command="{Binding AddHorizontalRayCommand}">+ HRay</Button>
         </Grid>
         <chart:ChartControl 
             Name="Chart"

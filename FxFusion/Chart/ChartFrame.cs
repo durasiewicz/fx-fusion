@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using SkiaSharp;
 
@@ -13,8 +14,17 @@ public readonly record struct ChartFrame(
     decimal MaxPrice,
     DateTime StartDateTime,
     DateTime EndDateTime,
-    IReadOnlyList<ChartSegment> Segments)
+    IReadOnlyList<ChartSegment> Segments,
+    ChartSegment? HoveredSegment = null)
 {
+    public ChartSegment? FindSegment(Point position) =>
+        Segments
+            // Lookup open interval, because segments shares same X position as border
+            .Where(q => q.LeftBorderPosX < position.X)
+            .Where(q => q.RightBorderPosX > position.X)
+            .Select(q => (ChartSegment?)q)
+            .SingleOrDefault();
+
     public float PriceToPosY(decimal price)
     {
         var priceDataMinDiff = (float)(price - MinPrice);
@@ -24,13 +34,16 @@ public readonly record struct ChartFrame(
 
     public double PosYToPrice(double posY)
     {
-        var yPosDiff = (float)(ChartBounds.Height - Settings.MarginTop - Settings.MarginBottom - posY) + (Settings.MarginTop >> 1);
+        var yPosDiff = (float)(ChartBounds.Height - Settings.MarginTop - Settings.MarginBottom - posY) +
+                       (Settings.MarginTop >> 1);
+        
         return yPosDiff / PixelsPerPriceUnit() + (double)MinPrice;
     }
 
     private float PixelsPerPriceUnit()
     {
         var priceRange = (double)(MaxPrice - MinPrice);
+        
         return (float)((ChartBounds.Height - Settings.MarginTop - Settings.MarginBottom) / priceRange);
     }
 }
