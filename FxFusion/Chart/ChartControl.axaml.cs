@@ -60,6 +60,13 @@ public partial class ChartControl : UserControl
             }
         };
 
+        PointerReleased += (sender, args) =>
+        {
+            var pointerPosition = args.GetPosition(this);
+            
+            _chartObjectManager.PointerReleased(pointerPosition);
+        };
+
         PointerPressed += (sender, args) =>
         {
             var pointerPosition = args.GetPosition(this);

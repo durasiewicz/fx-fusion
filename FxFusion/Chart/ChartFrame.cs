@@ -16,6 +16,16 @@ public readonly record struct ChartFrame(
     DateTime EndDateTime,
     IReadOnlyList<ChartSegment> Segments)
 {
+    public ChartSegment FindSegmentOrFail(DateTime time) =>
+        Segments
+            .Where(q => q.Bar.Time == time)
+            .Select(q => (ChartSegment?)q)
+            .SingleOrDefault() ??  throw new InvalidOperationException($"Segment for time {time} not found.");
+    
+    public ChartSegment FindSegmentOrFail(Point position) =>
+        FindSegment(position) ??
+        throw new InvalidOperationException($"Segment for position {position.ToString()} not found.");
+    
     public ChartSegment? FindSegment(Point position) =>
         Segments
             // Lookup open interval, because segments shares same X position as border

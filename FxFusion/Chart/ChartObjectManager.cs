@@ -16,18 +16,28 @@ public class ChartObjectManager
     private record AddHorizontalLineCommand(Point Position) : Command;
 
     private record AddHorizontalRayCommand(Point Position) : Command;
+
+    private record MoveObjectCommand(IChartObject ChartObject, Point NewPosition) : Command;
     
     private readonly ConcurrentQueue<Command> _commands = new();
     private readonly List<IChartObject> _chartObjects = new();
     private Point? _pointerPosition;
     private IChartObject? _hoveredObject;
     private IChartObject? _selectedObject;
+    private bool _pointerPressed;
 
     public void CreateHorizontalLine(Point position) => _commands.Enqueue(new AddHorizontalLineCommand(position));
     public void CreateHorizontalRay(Point position) => _commands.Enqueue(new AddHorizontalRayCommand(position));
     
     public void UpdatePointer(Point? pointerPosition)
     {
+        if (pointerPosition is { } newPosition &&
+            _selectedObject is not null && 
+            _pointerPressed)
+        {
+            _commands.Enqueue(new MoveObjectCommand(_selectedObject, newPosition));
+        }
+        
         _pointerPosition = pointerPosition;
     }
 
@@ -74,24 +84,41 @@ public class ChartObjectManager
                     break;
                 
                 case AddHorizontalRayCommand addHorizontalRayCommand:
-                    var segment = chartFrame.FindSegment(addHorizontalRayCommand.Position);
+                    var segment = chartFrame.FindSegmentOrFail(addHorizontalRayCommand.Position);
 
-                    if (!segment.HasValue)
-                    {
-                        throw new InvalidOperationException(
-                            $"Can't find segment for position {addHorizontalRayCommand.Position.ToString()}");
-                    }
-                    
                     _chartObjects.Add(new HorizontalRay()
                     {
                         Price = (decimal)chartFrame.PosYToPrice(addHorizontalRayCommand.Position.Y),
-                        Time = segment.Value.Bar.Time
+                        Time = segment.Bar.Time
                     });
                     
                     break;
                 
                 case DeleteObjectCommand deleteObjectCommand:
                     _chartObjects.Remove(deleteObjectCommand.ChartObject);
+                    break;
+                
+                case MoveObjectCommand moveObjectCommand:
+                    switch(moveObjectCommand.ChartObject)
+                    {
+                        case HorizontalLine horizontalLine:
+                        {
+                            var currentPositionY = chartFrame.PriceToPosY(horizontalLine.Price);
+                            var newPrice = chartFrame.PosYToPrice(currentPositionY + moveObjectCommand.NewPosition.Y);
+                            horizontalLine.Price = (decimal)newPrice;
+                            break;
+                        }
+                        
+                        case HorizontalRay horizontalRay:
+                        {
+                            var newPrice = chartFrame.PosYToPrice(moveObjectCommand.NewPosition.Y);
+                            var newSegment = chartFrame.FindSegmentOrFail(moveObjectCommand.NewPosition);
+
+                            horizontalRay.Price = (decimal)newPrice;
+                            horizontalRay.Time = newSegment.Bar.Time;
+                            break;
+                        }
+                    }
                     break;
                 
                 default: throw new NotSupportedException();
@@ -126,5 +153,12 @@ public class ChartObjectManager
             _selectedObject?.Unselect();
             _selectedObject = null;
         }
+
+        _pointerPressed = true;
+    }
+
+    public void PointerReleased(Point pointerPosition)
+    {
+        _pointerPressed = false;
     }
 }
