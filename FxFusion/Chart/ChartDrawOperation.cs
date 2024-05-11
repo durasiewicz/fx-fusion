@@ -129,7 +129,8 @@ public partial class ChartControl
                     continue;
                 }
 
-                var chartSegment = new ChartSegment(visibleDataSpan[segmentIndex],
+                var chartSegment = new ChartSegment(segmentIndex,
+                    visibleDataSpan[segmentIndex],
                     currentSegmentPosX - _segmentWidth,
                     currentSegmentPosX);
                 

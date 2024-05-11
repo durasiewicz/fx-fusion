@@ -14,6 +14,7 @@ public class HorizontalRay : IChartObject
     
     public decimal Price { get; set; }
     public DateTime Time { get; set; }
+    public DateTime? DragStartTime { get; set; }
     
     public bool Hover(ChartFrame chartFrame, Point point, DateTime time)
     {
