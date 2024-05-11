@@ -60,8 +60,7 @@ public class ChartObjectManager
 
         foreach (var chartObject in _chartObjects)
         {
-            if (hoveredPositionTime.HasValue &&
-                chartObject.Hover(chartFrame, hoveredPositionTime.Value.Item1, hoveredPositionTime.Value.Item2))
+            if (hoveredPositionTime is var (pos, time) && chartObject.Hover(chartFrame, pos, time))
             {
                 _hoveredObject = chartObject;
             }
