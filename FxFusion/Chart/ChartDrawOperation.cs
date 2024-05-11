@@ -16,8 +16,6 @@ public partial class ChartControl
 {
     private class ChartDrawOperation : ICustomDrawOperation
     {
-        public event Action<ChartMode> ChartModeChanged; 
-        
         public ChartDrawOperation(ChartObjectManager chartObjectManager)
         {
             _chartObjectManager = chartObjectManager;
@@ -119,8 +117,6 @@ public partial class ChartControl
             var timeLabelPosY = (float)(Bounds.Height - (_settings.MarginBottom) + 12);
 
             _visibleChartSegments.Clear();
-
-            ChartSegment? hoveredSegment = null;
             
             for (var segmentIndex = 0; segmentIndex < visibleSegmentsCount; segmentIndex++)
             {
