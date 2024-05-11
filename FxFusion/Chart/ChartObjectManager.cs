@@ -36,12 +36,22 @@ public class ChartObjectManager
         Flush(chartFrame);
 
         _hoveredObject = null;
+        (Point, DateTime)? hoveredPositionTime = null;
 
+        if (_pointerPosition.HasValue)
+        {
+            var segment = chartFrame.FindSegment(_pointerPosition.Value);
+
+            if (segment.HasValue)
+            {
+                hoveredPositionTime = (_pointerPosition.Value, segment.Value.Bar.Time);
+            }
+        }
+        
         foreach (var chartObject in _chartObjects)
         {
-            if (_pointerPosition.HasValue && 
-                chartFrame.HoveredSegment.HasValue &&
-                chartObject.Hover(chartFrame, _pointerPosition.Value, chartFrame.HoveredSegment.Value.Bar.Time))
+            if (hoveredPositionTime.HasValue &&
+                chartObject.Hover(chartFrame, hoveredPositionTime.Value.Item1, hoveredPositionTime.Value.Item2))
             {
                 _hoveredObject = chartObject;
             }

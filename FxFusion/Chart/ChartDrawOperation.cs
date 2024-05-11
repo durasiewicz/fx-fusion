@@ -52,7 +52,6 @@ public partial class ChartControl
         public bool Equals(ICustomDrawOperation? other) => false;
 
         public bool IsCrosshairVisible { get; set; }
-        public ChartMode ChartMode { get; set; }
 
         private int _segmentWidth = 50;
         private readonly int _zoomStep = 2;
@@ -63,7 +62,7 @@ public partial class ChartControl
         private readonly ChartSettings _settings = new();
 
         private IIndicator _priceIndicator = new CandlePriceIndicator();
-        private readonly List<ChartSegment> _visibleChartSegments = new List<ChartSegment>();
+        private readonly List<ChartSegment> _visibleChartSegments = new();
         private readonly ChartObjectManager _chartObjectManager;
 
         public void Render(ImmediateDrawingContext context)
@@ -140,7 +139,6 @@ public partial class ChartControl
                     _pointerPosition?.X >= currentSegmentPosX - _segmentWidth)
                 {
                     hoveredPosTime = (currentSegmentPosX - _segmentWidth / 2, chartSegment.Bar.Time);
-                    hoveredSegment = chartSegment;
                 }
 
                 currentSegmentPosX -= _segmentWidth;
@@ -153,8 +151,7 @@ public partial class ChartControl
                 maxPrice,
                 visibleDataSpan.IsEmpty ? default : visibleDataSpan[^1].Time,
                 visibleDataSpan.IsEmpty ? default : visibleDataSpan[0].Time,
-                _visibleChartSegments,
-                hoveredSegment);
+                _visibleChartSegments);
 
             for (int segmentIndex = 0; segmentIndex < _visibleChartSegments.Count; segmentIndex++)
             {

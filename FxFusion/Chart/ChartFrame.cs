@@ -14,8 +14,7 @@ public readonly record struct ChartFrame(
     decimal MaxPrice,
     DateTime StartDateTime,
     DateTime EndDateTime,
-    IReadOnlyList<ChartSegment> Segments,
-    ChartSegment? HoveredSegment = null)
+    IReadOnlyList<ChartSegment> Segments)
 {
     public ChartSegment? FindSegment(Point position) =>
         Segments
