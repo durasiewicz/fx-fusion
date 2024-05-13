@@ -32,7 +32,7 @@
             <ComboBox Grid.Column="3" 
                       ItemsSource="{Binding MarketDataSource.AvailableTimeFrames}"
                       SelectedItem="{Binding SelectedTimeFrame}"/>
-            <CheckBox Grid.Column="4" IsChecked="{Binding #Chart.IsCrosshairVisible}">Crosshair</CheckBox>
+            <CheckBox Grid.Column="4" IsChecked="{Binding #Chart.CrosshairVisible}">Crosshair</CheckBox>
             <Button Grid.Column="5" Command="{Binding ShowAsCandlesCommand}">Candle</Button>
             <Button Grid.Column="6" Command="{Binding ShowAsBarsCommand}">Bar</Button>
             <Button Grid.Column="7" Command="{Binding ShowAsLineCommand}">Line</Button>

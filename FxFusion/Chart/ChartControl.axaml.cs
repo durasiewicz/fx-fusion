@@ -22,13 +22,16 @@ public partial class ChartControl : UserControl
     private IIndicator _priceIndicator;
     private string? _timeFrame;
     private string? _symbol;
+    private readonly ChartObjectManager _chartObjectManager;
+    private readonly ChartScale _chartScale;
 
     public ChartControl()
     {
         InitializeComponent();
         ClipToBounds = true;
         _chartObjectManager = new ChartObjectManager();
-        _chartDrawOperation = new ChartDrawOperation(_chartObjectManager);
+        _chartScale = new ChartScale();
+        _chartDrawOperation = new ChartDrawOperation(_chartObjectManager, _chartScale);
 
         PropertyChanged += async (sender, args) =>
         {
@@ -212,9 +215,7 @@ public partial class ChartControl : UserControl
             (o, v) => o.ChartMode = v,
             defaultBindingMode: BindingMode.TwoWay,
             enableDataValidation: true);
-
-    private readonly ChartObjectManager _chartObjectManager;
-
+    
     public override void Render(DrawingContext context)
     {
         var dataShift = _data?.Length - BarsShift ?? 0;
@@ -234,10 +235,10 @@ public partial class ChartControl : UserControl
         Dispatcher.UIThread.InvokeAsync(InvalidateVisual, DispatcherPriority.Background);
     }
 
-    public bool IsCrosshairVisible
+    public bool CrosshairVisible
     {
-        get => _chartDrawOperation.IsCrosshairVisible;
-        set => _chartDrawOperation.IsCrosshairVisible = value;
+        get => _chartScale.CrosshairVisible;
+        set => _chartScale.CrosshairVisible = value;
     }
 
     public ReactiveCommand<Unit, Unit> ZoomInCommand { get; }
