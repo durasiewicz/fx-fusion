@@ -95,7 +95,7 @@ public partial class ChartControl
                 return;
             }
 
-            var canvasBounds = new Rect(Bounds.X + 100, Bounds.Y + 100, Bounds.Width - 300, Bounds.Height - 300);
+            var canvasBounds = new Rect(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
             var chartBounds = _chartScale.AdjustChartBounds(canvasBounds);
             
             var visibleSegmentsCount = (int)(chartBounds.Width / _segmentWidth);
