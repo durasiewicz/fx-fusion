@@ -65,18 +65,18 @@ public class HorizontalLine : IChartObject
         var posY = chartFrame.PriceToPosY(Price);
         chartFrame.Canvas.DrawLine(
             new SKPoint((float)chartFrame.ChartBounds.Left, posY),
-            new SKPoint((float)chartFrame.ChartBounds.Right - chartFrame.Settings.MarginRight, posY), _paint);
+            new SKPoint((float)chartFrame.ChartBounds.Right, posY), _paint);
 
         if (_isHover || _isSelected)
         {
-            chartFrame.Canvas.DrawCircle((float)(chartFrame.ChartBounds.Right - chartFrame.Settings.MarginRight) / 2,
+            chartFrame.Canvas.DrawCircle((float)chartFrame.ChartBounds.Right / 2,
                 posY,
                 6,
                 _paint);
 
             if (_isSelected)
             {
-                chartFrame.Canvas.DrawCircle((float)(chartFrame.ChartBounds.Right - chartFrame.Settings.MarginRight) / 2,
+                chartFrame.Canvas.DrawCircle((float)chartFrame.ChartBounds.Right / 2,
                     posY,
                     4,
                     _selectedPaint);

@@ -226,7 +226,7 @@ public partial class ChartControl : UserControl
             _chartDrawOperation.UpdatePointer(null);
         }
         
-        _chartDrawOperation.BeginRender(_data,
+        _chartDrawOperation.BeginFrame(_data,
             dataShift,
             new Rect(0, 0, Bounds.Width, Bounds.Height),
             _priceIndicator);

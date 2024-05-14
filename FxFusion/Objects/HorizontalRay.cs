@@ -73,7 +73,7 @@ public class HorizontalRay : IChartObject
         var posY = chartFrame.PriceToPosY(Price);
         chartFrame.Canvas.DrawLine(
             new SKPoint(segment.Value.Middle, posY),
-            new SKPoint((float)chartFrame.ChartBounds.Right - chartFrame.Settings.MarginRight, posY), _paint);
+            new SKPoint((float)chartFrame.ChartBounds.Right, posY), _paint);
 
         if (_isHover || _isSelected)
         {

@@ -26,7 +26,7 @@ public partial class ChartControl
         {
         }
 
-        public void BeginRender(Bar[]? data,
+        public void BeginFrame(Bar[]? data,
             int dataShift,
             Rect bounds,
             IIndicator priceIndicator)
@@ -55,8 +55,6 @@ public partial class ChartControl
 
         public void ZoomIn() => _segmentWidth = Math.Min(80, _segmentWidth + _zoomStep);
         public void ZoomOut() => _segmentWidth = Math.Max(2, _segmentWidth - _zoomStep);
-        
-        private readonly ChartSettings _settings = new();
 
         private IIndicator _priceIndicator = new CandlePriceIndicator();
         private readonly List<ChartSegment> _visibleChartSegments = new();
@@ -97,12 +95,15 @@ public partial class ChartControl
                 return;
             }
 
-            var visibleSegmentsCount = (int)((Bounds.Width - _settings.MarginRight) / _segmentWidth);
+            var canvasBounds = new Rect(Bounds.X + 100, Bounds.Y + 100, Bounds.Width - 300, Bounds.Height - 300);
+            var chartBounds = _chartScale.AdjustChartBounds(canvasBounds);
+            
+            var visibleSegmentsCount = (int)(chartBounds.Width / _segmentWidth);
             var visibleDataSpan = Data.AsSpan()[DataShift..Math.Min(DataShift + visibleSegmentsCount, Data.Length)];
             var (minPrice, maxPrice) = CalculateMinMaxPrice(visibleDataSpan);
 
             // 0.5f is initial value for pixel perfect drawing
-            var currentSegmentPosX = (float)Bounds.Width - _settings.MarginRight - 0.5f;
+            var currentSegmentPosX = (float)(chartBounds.X + chartBounds.Width) - 0.5f;
 
             (float, DateTime)? hoveredPosTime = null;
             
@@ -126,8 +127,8 @@ public partial class ChartControl
             }
             
             var chartFrame = new ChartFrame(canvas,
-                Bounds,
-                _settings,
+                canvasBounds,
+                chartBounds,
                 minPrice,
                 maxPrice,
                 visibleDataSpan.IsEmpty ? default : visibleDataSpan[^1].Time,

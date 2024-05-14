@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using Avalonia;
+using Avalonia.Animation.Easings;
 using Avalonia.Media;
 using SkiaSharp;
 
@@ -16,23 +17,26 @@ public class ChartScale
         DrawYScale(in chartFrame, pointerPosition);
     }
 
+    public Rect AdjustChartBounds(Rect chartBounds) =>
+        new Rect(chartBounds.X, chartBounds.Y, chartBounds.Width - ScaleYWidth, chartBounds.Height - ScaleXHeight - 10);
+
     private void DrawXScale(in ChartFrame chartFrame, Point? pointerPosition)
     {
-        var posY = (float)(chartFrame.ChartBounds.Height - (_settings.MarginBottom + 5));
-
-        chartFrame.Canvas.DrawLine(new SKPoint(0, posY),
-            new SKPoint((float)chartFrame.ChartBounds.Width, posY),
-            AppSettings.ScaleBorderPaint);
-        
         var timeLabelFormattedText = new FormattedText(DateTime.Now.ToString("yyyy-MM-dd"),
             CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight,
             new Typeface(FontFamily.Default),
             AppSettings.ScaleLabelTextPaint.TextSize,
             null);
+        
+        var posY = (float)(chartFrame.CanvasBounds.Y + chartFrame.CanvasBounds.Height - ScaleXHeight);
 
-        var lastTimeLabelPosX = chartFrame.ChartBounds.Width;
-        var timeLabelPosY = (float)(chartFrame.ChartBounds.Height - (_settings.MarginBottom) + 12);
+        chartFrame.Canvas.DrawLine(new SKPoint((float)chartFrame.CanvasBounds.X, posY),
+            new SKPoint((float)(chartFrame.CanvasBounds.X + chartFrame.CanvasBounds.Width), posY),
+            AppSettings.ScaleBorderPaint);
+
+        var lastTimeLabelPosX = chartFrame.CanvasBounds.X + chartFrame.CanvasBounds.Width;
+        var timeLabelPosY = (float)(chartFrame.CanvasBounds.Y + chartFrame.CanvasBounds.Height - 5);
 
         foreach (var chartSegment in chartFrame.Segments)
         {
@@ -77,20 +81,21 @@ public class ChartScale
         chartFrame.Canvas.DrawRect(new SKRect(posX - textHalfWidth - leftRightPadding,
                 posY,
                 posX + textHalfWidth + leftRightPadding,
-                (float)chartFrame.ChartBounds.Height),
+                (float)(chartFrame.CanvasBounds.Y + chartFrame.CanvasBounds.Height)),
             AppSettings.ScaleBorderPaint);
 
         chartFrame.Canvas.DrawText(timeLabelText,
             posX - textHalfWidth,
-            posY + 18,
+            timeLabelPosY,
             AppSettings.ScaleLabelTextPaint);
             
         chartFrame.Canvas.DrawLine(new SKPoint(posX, 0),
-            new SKPoint(posX, (float)chartFrame.ChartBounds.Height),
+            new SKPoint(posX, (float)(chartFrame.CanvasBounds.Y + chartFrame.CanvasBounds.Height)),
             AppSettings.ScaleBorderPaint);
     }
 
-    private readonly ChartSettings _settings = new ChartSettings();
+    private const int ScaleYWidth = 50;
+    private const int ScaleXHeight = 20;
 
     private void DrawYScale(in ChartFrame chartFrame, Point? pointerPosition)
     {
@@ -99,11 +104,11 @@ public class ChartScale
         var scaleYMin = Math.Floor((float)chartFrame.MinPrice / scaleYStep) * scaleYStep;
         var currentPrice = scaleYMax;
 
-        var scaleBorderX = (float)chartFrame.ChartBounds.Width - _settings.MarginRight + 5 + 0.5f;
-        var scaleBottomY = (float)(chartFrame.ChartBounds.Height - _settings.MarginBottom - 5);
+        var scaleBorderX = (float)(chartFrame.CanvasBounds.X + chartFrame.CanvasBounds.Width) - 0.5f;
+        var scaleBottomY = (float)(chartFrame.CanvasBounds.Y + chartFrame.CanvasBounds.Height - ScaleXHeight);
 
-        chartFrame.Canvas.DrawLine(new SKPoint(scaleBorderX, 0),
-            new SKPoint(scaleBorderX, scaleBottomY),
+        chartFrame.Canvas.DrawLine(new SKPoint(scaleBorderX - ScaleYWidth, (float)chartFrame.CanvasBounds.Y),
+            new SKPoint(scaleBorderX - ScaleYWidth, scaleBottomY),
             AppSettings.ScaleBorderPaint);
 
         while (currentPrice >= scaleYMin)
@@ -115,12 +120,12 @@ public class ChartScale
                 break;
             }
 
-            chartFrame.Canvas.DrawLine(new SKPoint(scaleBorderX, posY),
-                new SKPoint(scaleBorderX + 5, posY),
+            chartFrame.Canvas.DrawLine(new SKPoint(scaleBorderX - ScaleYWidth, posY),
+                new SKPoint(scaleBorderX - ScaleYWidth + 5, posY),
                 AppSettings.ScaleBorderPaint);
 
             chartFrame.Canvas.DrawText(currentPrice.ToString("0.##"),
-                ((float)chartFrame.ChartBounds.Width - _settings.MarginRight + 15),
+                ((float)scaleBorderX - 25),
                 posY,
                 AppSettings.ScaleBorderPaint);
 
@@ -129,25 +134,25 @@ public class ChartScale
 
         if (CrosshairVisible && pointerPosition.HasValue)
         {
-            chartFrame.Canvas.DrawRect(new SKRect(scaleBorderX,
+            chartFrame.Canvas.DrawRect(new SKRect(scaleBorderX - ScaleYWidth,
                 (float)(pointerPosition.Value.Y - 10.5f),
-                (float)chartFrame.ChartBounds.Width,
+                (float)(chartFrame.CanvasBounds.X + chartFrame.CanvasBounds.Width),
                 (float)(pointerPosition.Value.Y + 10.5f)), AppSettings.ScaleBorderPaint);
 
             chartFrame.Canvas.DrawText(chartFrame.PosYToPrice(pointerPosition.Value.Y).ToString("0.##"),
-                scaleBorderX + 10,
+                scaleBorderX - ScaleYWidth + 10,
                 (float)pointerPosition.Value.Y + 5,
                 AppSettings.ScaleLabelTextPaint);
             
             chartFrame.Canvas.DrawLine(new SKPoint(0, (float)pointerPosition.Value.Y - 0.5f),
-                new SKPoint((float)chartFrame.ChartBounds.Width, (float)pointerPosition.Value.Y - 0.5f),
+                new SKPoint((float)(chartFrame.CanvasBounds.X + chartFrame.CanvasBounds.Width - ScaleYWidth), (float)pointerPosition.Value.Y - 0.5f),
                 AppSettings.ScaleBorderPaint);
         }
     }
 
     private double CalculateYScaleStep(in ChartFrame chartFrame)
     {
-        var visibleSteps = chartFrame.ChartBounds.Height / 20;
+        var visibleSteps = chartFrame.CanvasBounds.Height / 20;
         var roughStep = (double)chartFrame.MaxPrice / (visibleSteps - 1);
         var exponent = Math.Floor(Math.Log10(roughStep));
         var magnitude = Math.Pow(10, exponent);
