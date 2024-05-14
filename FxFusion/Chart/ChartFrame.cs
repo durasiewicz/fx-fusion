@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Avalonia;
 using SkiaSharp;
@@ -16,6 +17,13 @@ public readonly record struct ChartFrame(
     DateTime EndDateTime,
     IReadOnlyList<ChartSegment> Segments)
 {
+    public bool IsWithinChartBounds([NotNullWhen(true)]Point? point) =>
+        point is { } pointValue &&
+        pointValue.X >= ChartBounds.X &&
+        pointValue.X <= ChartBounds.X + ChartBounds.Width &&
+        pointValue.Y >= ChartBounds.Y &&
+        pointValue.Y <= ChartBounds.Y + ChartBounds.Height;
+    
     public ChartSegment FindSegmentOrFail(DateTime time) =>
         Segments
             .Where(q => q.Bar.Time == time)

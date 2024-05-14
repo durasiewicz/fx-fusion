@@ -53,7 +53,7 @@ public class ChartScale
 
         ChartSegment? hoveredSegment = null;
 
-        if (CrosshairVisible && pointerPosition.HasValue)
+        if (CrosshairVisible && chartFrame.IsWithinChartBounds(pointerPosition))
         {
             hoveredSegment = chartFrame.FindSegment(pointerPosition.Value);
         }
@@ -89,7 +89,7 @@ public class ChartScale
             timeLabelPosY,
             AppSettings.ScaleLabelTextPaint);
             
-        chartFrame.Canvas.DrawLine(new SKPoint(posX, 0),
+        chartFrame.Canvas.DrawLine(new SKPoint(posX, (float)chartFrame.CanvasBounds.Y),
             new SKPoint(posX, (float)(chartFrame.CanvasBounds.Y + chartFrame.CanvasBounds.Height)),
             AppSettings.ScaleBorderPaint);
     }
@@ -132,7 +132,7 @@ public class ChartScale
             currentPrice -= scaleYStep;
         }
 
-        if (CrosshairVisible && pointerPosition.HasValue)
+        if (CrosshairVisible && chartFrame.IsWithinChartBounds(pointerPosition))
         {
             chartFrame.Canvas.DrawRect(new SKRect(scaleBorderX - ScaleYWidth,
                 (float)(pointerPosition.Value.Y - 10.5f),
