@@ -144,7 +144,7 @@ public class ChartScale
                 (float)pointerPosition.Value.Y + 5,
                 AppSettings.ScaleLabelTextPaint);
             
-            chartFrame.Canvas.DrawLine(new SKPoint(0, (float)pointerPosition.Value.Y - 0.5f),
+            chartFrame.Canvas.DrawLine(new SKPoint((float)chartFrame.ChartBounds.X, (float)pointerPosition.Value.Y - 0.5f),
                 new SKPoint((float)(chartFrame.CanvasBounds.X + chartFrame.CanvasBounds.Width - ScaleYWidth), (float)pointerPosition.Value.Y - 0.5f),
                 AppSettings.ScaleBorderPaint);
         }
