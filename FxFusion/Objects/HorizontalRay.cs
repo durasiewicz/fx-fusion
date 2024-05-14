@@ -60,6 +60,11 @@ public class HorizontalRay : IChartObject
 
     public void Draw(in ChartFrame chartFrame)
     {
+        if (chartFrame.MinPrice > Price || chartFrame.MaxPrice < Price)
+        {
+            return;
+        }
+        
         var segment = chartFrame.Segments
             .Where(q => q.Bar.Time == Time)
             .Select(q => (ChartSegment?)q)
