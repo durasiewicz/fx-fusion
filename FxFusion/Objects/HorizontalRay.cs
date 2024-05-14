@@ -64,15 +64,17 @@ public class HorizontalRay : IChartObject
             .Where(q => q.Bar.Time == Time)
             .Select(q => (ChartSegment?)q)
             .SingleOrDefault();
+        
+        var firstSegment = chartFrame.Segments.First();
 
-        if (!segment.HasValue)
+        if (firstSegment.Bar.Time < Time)
         {
             return;
         }
         
         var posY = chartFrame.PriceToPosY(Price);
         chartFrame.Canvas.DrawLine(
-            new SKPoint(segment.Value.Middle, posY),
+            new SKPoint((float)(segment?.Middle ?? chartFrame.ChartBounds.X), posY),
             new SKPoint((float)chartFrame.ChartBounds.Right, posY), _paint);
 
         if (_isHover || _isSelected)
